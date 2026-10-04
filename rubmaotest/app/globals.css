@@ -49,7 +49,7 @@
 }
 
 :root {
-  --background: #f6f8fc;
+  --background: #f0f1f5;
   --foreground: #22324a;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -870,6 +870,32 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
   padding: 0 24px 24px;
+}
+
+.appointment-date-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 41px;
+  padding: 9px 11px;
+  border: 1px solid #e2e9f3;
+  border-radius: 7px;
+  background: #fff;
+  color: #435571;
+}
+.appointment-date-field:focus-within {
+  outline: 2px solid #bad5ff;
+  border-color: #7cadf4;
+}
+.appointment-date-field input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 .full-width {
   grid-column: 1 / -1;

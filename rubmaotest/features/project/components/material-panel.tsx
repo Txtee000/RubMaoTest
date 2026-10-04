@@ -13,28 +13,55 @@ export function MaterialPanel({
   project: Project;
   onSave: (project: Project) => void;
 }) {
-  const [quantities, setQuantities] = useState(project.materials.map((m) => m.quantity));
-  const [message, setMessage] = useState("");
-  const canRecordUsage = ["confirmed", "revision", "shop_passed"].includes(project.status);
+  const [acquiredQuantities, setAcquiredQuantities] = useState<Record<string, string>>(
+    Object.fromEntries(project.materials.map((m) => [m.id, String(m.acquired_quantity ?? 0)])),
+  );
+  const [purchaseMessage, setPurchaseMessage] = useState("");
+  const canUpdatePurchases = !["pending", "estimated", "completed"].includes(project.status);
+  const plannedMaterials = project.quotation?.materials ?? [];
+  const completeCount = plannedMaterials.filter(
+    (m) => Number(acquiredQuantities[m.id] ?? 0) >= m.quantity,
+  ).length;
 
-  function saveUsage(event: FormEvent) {
+  function savePurchases(event: FormEvent) {
     event.preventDefault();
+    const invalidQuantity = plannedMaterials.some((m) => {
+      const value = acquiredQuantities[m.id];
+      return (
+        value === undefined ||
+        value.trim() === "" ||
+        !Number.isFinite(Number(value)) ||
+        Number(value) < 0
+      );
+    });
+    if (invalidQuantity) {
+      setPurchaseMessage("กรอกยอดที่ได้มาแล้วให้ครบ และต้องไม่น้อยกว่า 0");
+      return;
+    }
+
+    // กรอกยอดสะสม เช่น มี 4 แล้วได้เพิ่มอีก 3 ให้กรอก 7
+    const summary = plannedMaterials
+      .map((m) => `${m.material_name} ${Number(acquiredQuantities[m.id])}/${m.quantity} ${m.unit}`)
+      .join(", ");
     onSave({
       ...project,
-      materials: project.materials.map((m, index) => ({ ...m, quantity: quantities[index] })),
+      materials: project.materials.map((m) => ({
+        ...m,
+        acquired_quantity: Number(acquiredQuantities[m.id] ?? m.acquired_quantity ?? 0),
+      })),
       history: [
         ...project.history,
-        { date: new Date().toISOString(), text: "บันทึกจำนวนวัสดุใช้จริง" },
+        { date: new Date().toISOString(), text: `อัปเดตยอดวัสดุที่ได้มาแล้ว · ${summary}` },
       ],
     });
-    setMessage("บันทึกจำนวนใช้จริงแล้ว ราคาที่ตกลงไว้คงเดิม");
+    setPurchaseMessage("บันทึกยอดที่ได้มาแล้ว คำนวณจำนวนที่ต้องซื้อเพิ่มเรียบร้อย");
   }
 
   return (
     <>
       <Section
         title="รายการจัดซื้อ"
-        description="ซื้อวัสดุตามจำนวนในใบเสนอราคา ไม่มีการเชื่อมคลัง Stock"
+        description="อัปเดตยอดที่ได้มาแล้ว เทียบกับจำนวนที่วางไว้ในใบเสนอราคา"
       >
         {!project.quotation ? (
           <EmptyState
@@ -42,102 +69,89 @@ export function MaterialPanel({
             description="ยืนยันการประเมินราคาก่อนเริ่มซื้อวัสดุ"
           />
         ) : (
-          <>
+          <form onSubmit={savePurchases}>
+            <p className="notice">
+              วัสดุครบ {completeCount} จาก {plannedMaterials.length} รายการ ·
+              กรอกยอดสะสมที่ได้มาแล้ว เช่น เดิมได้ 4 แล้วซื้อเพิ่ม 3 ให้กรอก 7
+            </p>
             <div className="table-scroll">
               <table className="data-table">
                 <thead>
                   <tr>
                     <th>วัสดุ</th>
-                    <th>จำนวนที่ต้องซื้อ</th>
-                    <th>ราคา/หน่วย</th>
-                    <th>ต้นทุนประมาณการ</th>
-                    <th>ใช้สำหรับ</th>
+                    <th>จำนวนที่วางไว้</th>
+                    <th>ได้มาแล้ว (ยอดสะสม)</th>
+                    <th>ต้องซื้อเพิ่ม</th>
+                    <th>งบซื้อเพิ่มประมาณการ</th>
+                    <th>สถานะวัสดุ</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {project.quotation.materials.map((m) => (
-                    <tr key={m.id}>
-                      <td>
-                        <strong>{m.material_name}</strong>
-                      </td>
-                      <td>
-                        {m.quantity} {m.unit}
-                      </td>
-                      <td>฿{money(m.unit_cost)}</td>
-                      <td>฿{money(m.quantity * m.unit_cost)}</td>
-                      <td>{m.use_for || "—"}</td>
-                    </tr>
-                  ))}
+                  {plannedMaterials.map((m) => {
+                    const acquired = Number(acquiredQuantities[m.id] ?? 0);
+                    const remaining = Math.max(0, Math.round((m.quantity - acquired) * 100) / 100);
+                    return (
+                      <tr key={m.id}>
+                        <td>
+                          <strong>{m.material_name}</strong>
+                          <small className="table-subtext">{m.use_for || "—"}</small>
+                        </td>
+                        <td>
+                          {m.quantity} {m.unit}
+                        </td>
+                        <td>
+                          <div className="input-with-unit">
+                            <input
+                              className="w-28"
+                              aria-label={`ได้มาแล้ว ${m.material_name}`}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              required
+                              disabled={!canUpdatePurchases}
+                              value={acquiredQuantities[m.id] ?? "0"}
+                              onChange={(e) => {
+                                setAcquiredQuantities({
+                                  ...acquiredQuantities,
+                                  [m.id]: e.target.value,
+                                });
+                                setPurchaseMessage("");
+                              }}
+                            />
+                            <span>{m.unit}</span>
+                          </div>
+                        </td>
+                        <td className={remaining === 0 ? "text-green" : "text-blue"}>
+                          {remaining} {m.unit}
+                        </td>
+                        <td>฿{money(remaining * m.unit_cost)}</td>
+                        <td>
+                          <span className={`badge badge-${remaining === 0 ? "green" : "amber"}`}>
+                            {remaining === 0 ? "วัสดุครบแล้ว" : "ยังต้องซื้อเพิ่ม"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
             <p className="page-note">
-              ตาม Use Case ล่าสุด ไม่มีข้อมูลจำนวนซื้อจริงหรือจำนวนยังขาด
-              หากซื้อไม่ครบให้ซื้อส่วนที่เหลือภายหลัง
+              ต้องซื้อเพิ่ม = จำนวนที่วางไว้ − ยอดที่ได้มาแล้ว (ต่ำสุด 0) · ยอดนี้เป็นของ Project
+              นี้ และไม่เปลี่ยนราคาที่เสนอให้ลูกค้า
             </p>
-            {!["pending", "estimated", "completed"].includes(project.status) && (
-              <div className="form-actions">
-                <p className="text-sm text-blue" role="status">{message}</p>
-                <Button
-                  onClick={() => {
-                    onSave({
-                      ...project,
-                      history: [
-                        ...project.history,
-                        { date: new Date().toISOString(), text: "ยืนยันการซื้อวัสดุตามรายการ" },
-                      ],
-                    });
-                    setMessage("ยืนยันการซื้อตามรายการแล้ว");
-                  }}
-                >
-                  ยืนยันการซื้อวัสดุตามรายการ
-                </Button>
-              </div>
-            )}
-          </>
-        )}
-      </Section>
-      {project.materials.length > 0 && (
-        <Section
-          title="วัสดุใช้จริง"
-          description="บันทึกจำนวนที่ใช้เมื่อลงมือทำงาน แยกจากใบเสนอราคาที่ยืนยันแล้ว"
-        >
-          <form onSubmit={saveUsage}>
-            <div className="usage-grid">
-              {project.materials.map((m, index) => (
-                <label key={m.id}>
-                  {m.material_name}
-                  <div className="input-with-unit">
-                    <input
-                      aria-label={`ใช้จริง ${m.material_name}`}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      required
-                      disabled={!canRecordUsage}
-                      value={quantities[index]}
-                      onChange={(e) =>
-                        setQuantities(
-                          quantities.map((value, i) =>
-                            i === index ? Number(e.target.value) : value,
-                          ),
-                        )
-                      }
-                    />
-                    <span>{m.unit}</span>
-                  </div>
-                </label>
-              ))}
-            </div>
             <div className="form-actions">
-              <p role="status" className="text-blue text-sm">
-                {message}
+              <p className="text-sm text-blue" role="status">
+                {purchaseMessage ||
+                  (!canUpdatePurchases && project.status !== "completed"
+                    ? "อัปเดตยอดจัดซื้อได้เมื่อลูกค้าตกลงงานแล้ว"
+                    : "")}
               </p>
-              {canRecordUsage && <Button type="submit">บันทึกจำนวนใช้จริง</Button>}
+              {canUpdatePurchases && <Button type="submit">บันทึกยอดที่ได้มาแล้ว</Button>}
             </div>
           </form>
-        </Section>
-      )}
+        )}
+      </Section>
     </>
   );
 }

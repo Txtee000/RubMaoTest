@@ -33,7 +33,7 @@ export function formatDate(value: string, showTime = false) {
     month: "short",
     year: "numeric",
     timeZone: "Asia/Bangkok",
-    ...(showTime ? ({ hour: "2-digit", minute: "2-digit" } as const) : {}),
+    ...(showTime ? ({ hour: "2-digit", minute: "2-digit", hourCycle: "h23" } as const) : {}),
   }).format(new Date(value));
 }
 

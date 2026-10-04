@@ -15,6 +15,8 @@ export type Material = {
   id: string;
   material_name: string;
   quantity: number;
+  // ยอดที่ได้มาแล้วของงานนี้ แยกจากจำนวนตามใบเสนอราคาและจำนวนใช้จริง
+  acquired_quantity?: number;
   unit: string;
   unit_cost: number;
   use_for: string;

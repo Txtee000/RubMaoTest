@@ -1,10 +1,15 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, FolderOpenDot } from "lucide-react";
+
 import { EmptyState, StatusBadge } from "@/features/shared/ui";
 import { calculatePayments, money, projectPrice } from "../project-utils";
 import type { Project } from "../types";
+import { useRouter } from "next/navigation"
 
 export function ProjectTable({ projects }: { projects: Project[] }) {
+
+  const router = useRouter()
+
   if (!projects.length)
     return <EmptyState title="ไม่พบงาน" description="ลองเปลี่ยนคำค้นหาหรือสถานะที่เลือก" />;
   return (
@@ -26,17 +31,17 @@ export function ProjectTable({ projects }: { projects: Project[] }) {
             const price = projectPrice(project);
             const payment = calculatePayments(price.final_cost, project.payments);
             return (
-              <tr key={project.id}>
+              <tr key={project.id} onClick={() => router.push(`/project/${project.id}`)} className="hover:cursor-pointer">
                 <td>
-                  <Link className="project-name" href={`/project/${project.id}`}>
-                    <span className="project-symbol">{project.order_name.slice(0, 1)}</span>
+                  <div className="project-name">
+                    <span className="project-symbol"><FolderOpenDot size={16}/></span>
                     <span>
                       <strong>{project.order_name}</strong>
                       <small>
                         #{project.id} · {project.customer_name}
                       </small>
                     </span>
-                  </Link>
+                  </div>
                 </td>
                 <td>
                   <StatusBadge status={project.status} />
@@ -56,13 +61,13 @@ export function ProjectTable({ projects }: { projects: Project[] }) {
                   </span>
                 </td>
                 <td>
-                  <Link
-                    href={`/project/${project.id}`}
+                  <div
+                    
                     className="icon-link"
                     aria-label={`เปิดงาน ${project.order_name}`}
                   >
                     <ArrowUpRight size={18} />
-                  </Link>
+                  </div>
                 </td>
               </tr>
             );

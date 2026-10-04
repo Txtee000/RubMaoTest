@@ -1,15 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/features/shared/ui";
 import { appointmentLabels, formatDate } from "../project-utils";
 import { useProjects } from "../project-provider";
 import type { Appointment, Project } from "../types";
-
-function localDateTime(value: string) {
-  return value.slice(0, 16);
-}
 
 export function AppointmentPanel({ project }: { project: Project }) {
   const { data, saveAppointment } = useProjects();
@@ -17,9 +14,24 @@ export function AppointmentPanel({ project }: { project: Project }) {
   const [editingId, setEditingId] = useState("");
   const [type, setType] = useState<Appointment["appointment_type"]>("site_visit");
   const [date, setDate] = useState("");
+  const [hour, setHour] = useState("");
+  const [minute, setMinute] = useState("00");
   const [location, setLocation] = useState("");
   const [message, setMessage] = useState("");
-  const canScheduleDelivery = project.status === "shop_passed" && !!project.delivery_type;
+
+  function completeAppointment(appointment: Appointment) {
+    saveAppointment({ ...appointment, status: "completed" });
+    // ปิดฟอร์มของนัดที่เสร็จแล้ว เพื่อไม่ให้บันทึกกลับเป็นรอดำเนินการ
+    if (editingId === appointment.id) {
+      setEditingId("");
+      setDate("");
+      setHour("");
+      setMinute("00");
+      setLocation("");
+      setType("site_visit");
+    }
+    setMessage("อัปเดตนัดหมายเป็นดำเนินการแล้ว");
+  }
 
   function save(event: FormEvent) {
     event.preventDefault();
@@ -27,20 +39,18 @@ export function AppointmentPanel({ project }: { project: Project }) {
       setMessage("กรอกสถานที่นัดหมายก่อนบันทึก");
       return;
     }
-    if (type !== "site_visit" && !canScheduleDelivery && !editingId) {
-      setMessage("เลือกวิธีรับงานหลังงานที่ร้านตรวจผ่านก่อน");
-      return;
-    }
     saveAppointment({
       id: editingId || crypto.randomUUID(),
       project_id: project.id,
       appointment_type: type,
-      appointment_datetime: `${date}:00+07:00`,
+      appointment_datetime: `${date}T${hour}:${minute}:00+07:00`,
       location: location.trim(),
       status: "pending",
     });
     setEditingId("");
     setDate("");
+    setHour("");
+    setMinute("00");
     setLocation("");
     setMessage("บันทึกนัดหมายแล้ว");
   }
@@ -59,18 +69,26 @@ export function AppointmentPanel({ project }: { project: Project }) {
                 <p className="text-muted">{a.location}</p>
                 <small>{a.status === "completed" ? "ดำเนินการแล้ว" : "รอดำเนินการ"}</small>
                 {a.status === "pending" && project.status !== "completed" && (
+                  <div className="button-row ml-auto">
                   <Button
+                    type="button"
                     variant="outline"
                     onClick={() => {
                       setEditingId(a.id);
                       setType(a.appointment_type);
-                      setDate(localDateTime(a.appointment_datetime));
+                      setDate(a.appointment_datetime.slice(0, 10));
+                      setHour(a.appointment_datetime.slice(11, 13));
+                      setMinute(a.appointment_datetime.slice(14, 16));
                       setLocation(a.location);
                       setMessage("");
                     }}
                   >
                     แก้ไขนัด
                   </Button>
+                  <Button type="button" onClick={() => completeAppointment(a)}>
+                    ดำเนินการแล้ว
+                  </Button>
+                  </div>
                 )}
               </div>
             ))
@@ -82,7 +100,7 @@ export function AppointmentPanel({ project }: { project: Project }) {
       {project.status !== "completed" && (
         <Section
           title={editingId ? "แก้ไขนัดหมาย" : "เพิ่มนัดหมาย"}
-          description="ดูหน้างานนัดได้ก่อนประเมิน ส่วนรับสินค้า/ติดตั้งเลือกได้หลังตรวจที่ร้านผ่าน"
+          description="หัวหน้าเลือกประเภทนัด วันเวลา และสถานที่ได้เอง"
         >
           <form onSubmit={save}>
             <div className="form-grid">
@@ -91,25 +109,67 @@ export function AppointmentPanel({ project }: { project: Project }) {
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as Appointment["appointment_type"])}
-                  disabled={!!editingId}
                 >
-                  <option value="site_visit">ดูหน้างาน</option>
-                  {(canScheduleDelivery || type !== "site_visit") && (
-                    <option value={project.delivery_type ?? type}>
-                      {appointmentLabels[project.delivery_type ?? type]}
+                  {Object.entries(appointmentLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
                     </option>
-                  )}
+                  ))}
                 </select>
               </label>
               <label>
-                วันและเวลา
-                <input
-                  type="datetime-local"
-                  required
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
+                วันที่นัดหมาย
+                <span className="appointment-date-field">
+                  {/* ใช้ปฏิทินเดิม แต่แสดงวัน/เดือน/ปีให้ตรงกันทุกเครื่อง */}
+                  <span aria-hidden="true">
+                    {date ? date.split("-").reverse().join("/") : "วว/ดด/ปปปป"}
+                  </span>
+                  <CalendarDays size={17} aria-hidden="true" />
+                  <input
+                    type="date"
+                    aria-label="วันที่นัดหมาย"
+                    required
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    onClick={(e) => {
+                      try {
+                        e.currentTarget.showPicker?.();
+                      } catch {
+                        // เบราว์เซอร์ที่ไม่รองรับจะใช้ตัวเลือกวันที่ตามปกติ
+                      }
+                    }}
+                  />
+                </span>
               </label>
+              <div>
+                <span className="text-sm text-muted">เวลา</span>
+                <div className="button-row mt-2">
+                  <select
+                    aria-label="ชั่วโมงนัดหมาย"
+                    required
+                    value={hour}
+                    onChange={(e) => setHour(e.target.value)}
+                  >
+                    <option value="" disabled>ชั่วโมง</option>
+                    {Array.from({ length: 24 }, (_, value) => {
+                      const text = String(value).padStart(2, "0");
+                      return <option key={text} value={text}>{text}</option>;
+                    })}
+                  </select>
+                  <span aria-hidden="true">:</span>
+                  <select
+                    aria-label="นาทีนัดหมาย"
+                    required
+                    value={minute}
+                    onChange={(e) => setMinute(e.target.value)}
+                  >
+                    {Array.from({ length: 60 }, (_, value) => {
+                      const text = String(value).padStart(2, "0");
+                      return <option key={text} value={text}>{text}</option>;
+                    })}
+                  </select>
+                </div>
+              </div>
               <label className="full-width">
                 สถานที่
                 <input
@@ -132,6 +192,8 @@ export function AppointmentPanel({ project }: { project: Project }) {
                     onClick={() => {
                       setEditingId("");
                       setDate("");
+                      setHour("");
+                      setMinute("00");
                       setLocation("");
                       setType("site_visit");
                     }}

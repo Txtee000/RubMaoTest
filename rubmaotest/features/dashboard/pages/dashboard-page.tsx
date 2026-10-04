@@ -81,29 +81,7 @@ export function DashboardPage() {
           </Link>
         }
       />
-      <div className="welcome-banner">
-        <div>
-          <span className="banner-label">
-            <Sparkles size={15} />
-            จัดการงานอย่างเป็นระบบ
-          </span>
-          <h2>ทุกงานชัดเจน ทุกขั้นตอนอยู่ในมือคุณ</h2>
-          <p>ประเมินราคา วางแผนทีม และติดตามการส่งมอบได้จากพื้นที่เดียว</p>
-        </div>
-        <div className="banner-art" aria-hidden="true">
-          <div className="art-sheet">
-            <span />
-            <span />
-            <span />
-            <div>
-              <CheckCircle2 size={24} /> Ready to work
-            </div>
-          </div>
-          <div className="art-check">
-            <CheckCircle2 size={24} />
-          </div>
-        </div>
-      </div>
+      
       <div className="stats-grid">
         {stats.map((item) => (
           <div className="stat-card" key={item.label}>
@@ -175,13 +153,13 @@ export function DashboardPage() {
                 )
                 .slice(0, 3)
                 .map((p) => (
-                  <Link href={`/project/${p.id}`} key={p.id}>
-                    <span className="todo-dot" />
+                  <Link href={`/project/${p.id}`} key={p.id} className="hover:-translate-y-1 hover:bg-gray-100 hover:rounded-[2px] duration-200 ">
+                    <span className="todo-dot ml-2" />
                     <div>
-                      <strong>{p.order_name}</strong>
-                      <small>{statusLabels[p.status]}</small>
+                      <div>{p.order_name}</div>
+                      <div className="text-[11px]">{statusLabels[p.status]}</div>
                     </div>
-                    <ArrowUpRight size={16} />
+                    <ArrowUpRight size={16} className="mr-2"/>
                   </Link>
                 ))}
             </div>

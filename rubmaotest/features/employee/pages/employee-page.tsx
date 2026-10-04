@@ -22,7 +22,6 @@ export function EmployeePage() {
           );
           return (
             <section key={employee.id} className="employee-card">
-              <span className="employee-avatar">{employee.employee_name.slice(0, 1)}</span>
               <h2>{employee.employee_name}</h2>
               <p className="text-muted">{employee.role}</p>
               <a className="employee-phone" href={`tel:${employee.phone_number}`}>
@@ -36,9 +35,11 @@ export function EmployeePage() {
               <div className="employee-projects">
                 {tasks.length ? (
                   tasks.map((p) => (
-                    <Link key={p.id} href={`/project/${p.id}`}>
-                      {p.order_name}
-                      <ArrowUpRight size={14} />
+                    <Link key={p.id} href={`/project/${p.id}`} className="group">
+                      <div className="group-hover:text-black">
+                        {p.order_name}
+                      </div>
+                      <ArrowUpRight size={14} className="group-hover:text-black"/>
                     </Link>
                   ))
                 ) : (

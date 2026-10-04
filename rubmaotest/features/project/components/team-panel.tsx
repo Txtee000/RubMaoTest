@@ -40,7 +40,6 @@ export function TeamPanel({
                 )
               }
             />
-            <span className="avatar">{employee.employee_name.slice(0, 1)}</span>
             <span>
               <strong>{employee.employee_name}</strong>
               <small>

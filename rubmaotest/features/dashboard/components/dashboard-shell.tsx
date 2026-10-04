@@ -79,21 +79,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="sidebar-bottom">
-          <div className="workspace-note">
-            <CircleHelp size={20} />
-            <strong>จัดการงานให้เป็นเรื่องง่าย</strong>
-            <p>รายละเอียดครบ จบในพื้นที่เดียว</p>
-          </div>
-          <div className="profile">
-            <span className="avatar">ร</span>
-            <div>
-              <strong>เจ้าของร้าน</strong>
-              <span>RubMao workspace</span>
-            </div>
-            <span className="online-dot" />
-          </div>
-        </div>
       </aside>
       <div className="main-area">
         <header className="topbar">
@@ -109,10 +94,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             <ChevronRight size={14} />
             <strong>{current?.label ?? "รายละเอียดงาน"}</strong>
           </div>
-          <div className="topbar-right">
-            <span className="demo-badge">โหมดตัวอย่าง</span>
-            <span className="avatar avatar-small">ร</span>
-          </div>
+          
         </header>
         <main className="page-content">
           {storageError && (
