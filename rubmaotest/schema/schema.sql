@@ -1,0 +1,74 @@
+-- ER diagram schema. IDs are supplied by the application.
+-- Create parent tables before tables that reference them.
+
+CREATE TABLE customer (
+  customer_id VARCHAR(36) PRIMARY KEY,
+  customer_name VARCHAR(255) NOT NULL,
+  phone_number VARCHAR(30) NOT NULL,
+  line_id VARCHAR(255)
+);
+
+CREATE TABLE project (
+  project_id VARCHAR(36) PRIMARY KEY,
+  customer_id VARCHAR(36) NOT NULL,
+  description_project TEXT,
+  status VARCHAR(50) NOT NULL,
+  base_cost DECIMAL(14, 2) NOT NULL CHECK (base_cost >= 0),
+  labor_cost DECIMAL(14, 2) NOT NULL CHECK (labor_cost >= 0),
+  service_percent DECIMAL(7, 4) NOT NULL CHECK (service_percent >= 0),
+  final_cost DECIMAL(14, 2) NOT NULL CHECK (final_cost >= 0),
+  order_name VARCHAR(255) NOT NULL,
+  FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+);
+
+CREATE TABLE employee (
+  employee_id VARCHAR(36) PRIMARY KEY,
+  employee_name VARCHAR(255) NOT NULL,
+  role VARCHAR(100) NOT NULL,
+  phone_number VARCHAR(30) NOT NULL
+);
+
+CREATE TABLE work_on (
+  employee_id VARCHAR(36) NOT NULL,
+  project_id VARCHAR(36) NOT NULL,
+  PRIMARY KEY (employee_id, project_id),
+  FOREIGN KEY (employee_id) REFERENCES employee(employee_id),
+  FOREIGN KEY (project_id) REFERENCES project(project_id)
+);
+
+CREATE TABLE appointment (
+  appointment_id VARCHAR(36) PRIMARY KEY,
+  project_id VARCHAR(36) NOT NULL,
+  customer_id VARCHAR(36) NOT NULL,
+  appointment_type VARCHAR(30) NOT NULL
+    CHECK (appointment_type IN ('site_visit', 'pickup')),
+  location TEXT NOT NULL,
+  appointment_datetime TIMESTAMP NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  reminder_status VARCHAR(20) NOT NULL DEFAULT 'pending'
+    CHECK (reminder_status IN ('pending', 'send', 'failed')),
+  reminder_sent_at TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES project(project_id),
+  FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+);
+
+CREATE TABLE job_material (
+  job_material_id VARCHAR(36) PRIMARY KEY,
+  project_id VARCHAR(36) NOT NULL,
+  quantity DECIMAL(14, 3) NOT NULL CHECK (quantity >= 0),
+  material_name VARCHAR(255) NOT NULL,
+  use_for TEXT,
+  unit VARCHAR(50) NOT NULL,
+  unit_cost DECIMAL(14, 2) NOT NULL CHECK (unit_cost >= 0),
+  FOREIGN KEY (project_id) REFERENCES project(project_id)
+);
+
+CREATE TABLE payment (
+  payment_id VARCHAR(36) PRIMARY KEY,
+  project_id VARCHAR(36) NOT NULL,
+  proof_of_payment TEXT,
+  payment_date TIMESTAMP,
+  status VARCHAR(50) NOT NULL,
+  amount DECIMAL(14, 2) NOT NULL CHECK (amount >= 0),
+  FOREIGN KEY (project_id) REFERENCES project(project_id)
+);
