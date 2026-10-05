@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+
 import {
   ArrowRight,
   ArrowUpRight,
@@ -69,6 +71,18 @@ export function DashboardPage() {
       color: "violet",
     },
   ];
+
+  async function test(){
+    const { data, error } = await supabase
+      .from("customer")
+      .select("*");
+
+    if (error) {
+      console.error(error.message);
+    } else {
+      console.log(data);
+    }
+  }
   return (
     <>
       <PageHeading
