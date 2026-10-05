@@ -102,11 +102,11 @@ export function EstimatePanel({
           </p>
         )}
         <div className="table-scroll">
-          <table className="data-table material-table">
+          <table className="data-table material-table w-full">
             <thead>
               <tr>
                 <th>วัสดุ / ใช้สำหรับ</th>
-                <th>จำนวน</th>
+                <th className="w-[90px]">จำนวน</th>
                 <th>หน่วย</th>
                 <th>ราคา/หน่วย</th>
                 <th>รวม</th>
@@ -140,6 +140,7 @@ export function EstimatePanel({
                       disabled={!editable}
                       value={item.quantity}
                       onChange={(e) => editMaterial(item.id, "quantity", Number(e.target.value))}
+          
                     />
                   </td>
                   <td>

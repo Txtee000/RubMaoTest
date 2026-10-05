@@ -31,7 +31,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const { storageError } = useProjects();
-  if (pathname.endsWith("/bill")) return <>{children}</>;
+  if (pathname === "/login" || pathname.endsWith("/bill")) return <>{children}</>;
   const current = navigation.find((item) =>
     item.href === "/" ? pathname === "/" : pathname.startsWith(item.href),
   );

@@ -20,6 +20,7 @@ import { calculatePayments, formatDate, money, projectPrice } from "../project-u
 import { EmptyState, LoadingState, Section, StatusBadge } from "@/features/shared/ui";
 import { EstimatePanel } from "../components/estimate-panel";
 import { MaterialPanel } from "../components/material-panel";
+import { AdditionalMaterialPanel } from "../components/additional-material-panel";
 import { TeamPanel } from "../components/team-panel";
 import { AppointmentPanel } from "../components/appointment-panel";
 import { PaymentPanel } from "../components/payment-panel";
@@ -173,6 +174,7 @@ export function ProjectDetailPage({
           hidden={tab !== "estimate"}
         >
           <EstimatePanel project={project} onSave={updateProject} />
+          <AdditionalMaterialPanel project={project} onSave={updateProject} />
         </div>
         <div
           role="tabpanel"
@@ -181,10 +183,11 @@ export function ProjectDetailPage({
           hidden={tab !== "material"}
         >
           <MaterialPanel
-            key={JSON.stringify(project.quotation?.materials) ?? "draft"}
+            key={JSON.stringify([project.quotation?.materials, project.materials.map((m) => [m.id, m.acquired_quantity])])}
             project={project}
             onSave={updateProject}
           />
+          <AdditionalMaterialPanel project={project} onSave={updateProject} />
         </div>
         <div role="tabpanel" id="panel-team" aria-labelledby="tab-team" hidden={tab !== "team"}>
           <TeamPanel project={project} onSave={updateProject} />

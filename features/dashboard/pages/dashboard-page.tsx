@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 
 import {
   ArrowRight,
@@ -25,9 +24,11 @@ import {
   statusLabels,
 } from "@/features/project/project-utils";
 import { ProjectTable } from "@/features/project/components/project-table";
+import { useEffect } from "react";
 
 export function DashboardPage() {
   const { data, ready } = useProjects();
+
   if (!ready) return <LoadingState />;
   const active = data.projects.filter((p) => p.status !== "completed");
   const awaiting = data.projects.filter((p) => p.status === "pending" || p.status === "estimated");
@@ -72,17 +73,7 @@ export function DashboardPage() {
     },
   ];
 
-  async function test(){
-    const { data, error } = await supabase
-      .from("customer")
-      .select("*");
-
-    if (error) {
-      console.error(error.message);
-    } else {
-      console.log(data);
-    }
-  }
+  
   return (
     <>
       <PageHeading

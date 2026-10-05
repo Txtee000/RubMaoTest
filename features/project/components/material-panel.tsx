@@ -18,7 +18,11 @@ export function MaterialPanel({
   );
   const [purchaseMessage, setPurchaseMessage] = useState("");
   const canUpdatePurchases = !["pending", "estimated", "completed"].includes(project.status);
-  const plannedMaterials = project.quotation?.materials ?? [];
+  const quotationMaterials = project.quotation?.materials ?? [];
+  const plannedMaterials = [
+    ...quotationMaterials,
+    ...project.materials.filter((m) => !quotationMaterials.some((quoted) => quoted.id === m.id)),
+  ];
   const completeCount = plannedMaterials.filter(
     (m) => Number(acquiredQuantities[m.id] ?? 0) >= m.quantity,
   ).length;
@@ -72,16 +76,16 @@ export function MaterialPanel({
           <form onSubmit={savePurchases}>
             <p className="notice">
               วัสดุครบ {completeCount} จาก {plannedMaterials.length} รายการ ·
-              กรอกยอดสะสมที่ได้มาแล้ว เช่น เดิมได้ 4 แล้วซื้อเพิ่ม 3 ให้กรอก 7
+              กรอกยอดสะสมทั้งหมด หรือใช้แบบฟอร์มซื้อเพิ่มด้านล่างเพื่อบวกจากยอดเดิม
             </p>
             <div className="table-scroll">
               <table className="data-table">
                 <thead>
                   <tr>
                     <th>วัสดุ</th>
-                    <th>จำนวนที่วางไว้</th>
+                    <th>จำนวนตามแผน / ที่เพิ่ม</th>
                     <th>ได้มาแล้ว (ยอดสะสม)</th>
-                    <th>ต้องซื้อเพิ่ม</th>
+                    <th>ยังขาดตามใบประเมิน</th>
                     <th>งบซื้อเพิ่มประมาณการ</th>
                     <th>สถานะวัสดุ</th>
                   </tr>
@@ -95,6 +99,7 @@ export function MaterialPanel({
                         <td>
                           <strong>{m.material_name}</strong>
                           <small className="table-subtext">{m.use_for || "—"}</small>
+                          {!quotationMaterials.some((quoted) => quoted.id === m.id) && <span className="badge badge-blue">วัสดุใหม่ระหว่างทำงาน</span>}
                         </td>
                         <td>
                           {m.quantity} {m.unit}
@@ -137,8 +142,8 @@ export function MaterialPanel({
               </table>
             </div>
             <p className="page-note">
-              ต้องซื้อเพิ่ม = จำนวนที่วางไว้ − ยอดที่ได้มาแล้ว (ต่ำสุด 0) · ยอดนี้เป็นของ Project
-              นี้ และไม่เปลี่ยนราคาที่เสนอให้ลูกค้า
+              ยอดสะสมรวมการซื้อเพิ่มแล้ว · ยังขาด = จำนวนที่วางไว้ − ยอดสะสม (ต่ำสุด 0)
+              การซื้อเพิ่มไม่เปลี่ยนยอดใบเสนอราคา
             </p>
             <div className="form-actions">
               <p className="text-sm text-blue" role="status">
