@@ -5,22 +5,20 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    let query = supabase.from("project").select("*");
-    const id = searchParams.get("id") ?? searchParams.get("project_id");
-    if (id) query = query.eq("project_id", id);
-    const customer_id = searchParams.get("customer_id");
-    if (customer_id) query = query.eq("customer_id", customer_id);
-    const status = searchParams.get("status");
-    if (status) query = query.eq("status", status);
+    let query = supabase.from("customer").select("*");
+    const id = searchParams.get("id") ?? searchParams.get("customer_id");
+    if (id) query = query.eq("customer_id", id);
+    const phone_number = searchParams.get("phone_number");
+    if (phone_number) query = query.eq("phone_number", phone_number);
 
     const { data, error } = await query;
     if (error) return databaseError(error, "โหลดข้อมูล");
 
-    return NextResponse.json({ projects: data }, {
+    return NextResponse.json({ customers: data }, {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
-    console.error("GET project:", error);
+    console.error("GET customer:", error);
     return NextResponse.json({ error: "โหลดข้อมูลไม่สำเร็จ" }, { status: 500 });
   }
 }
@@ -37,29 +35,24 @@ export async function POST(request: Request) {
     }
 
     const payload = {
-      project_id: body.project_id ?? crypto.randomUUID(),
-      customer_id: body.customer_id,
-      description_project: body.description_project ?? null,
-      status: body.status,
-      base_cost: body.base_cost,
-      labor_cost: body.labor_cost,
-      service_percent: body.service_percent,
-      final_cost: body.final_cost,
-      order_name: body.order_name,
+      customer_id: body.customer_id ?? crypto.randomUUID(),
+      customer_name: body.customer_name,
+      phone_number: body.phone_number,
+      line_id: body.line_id ?? null,
     };
     const message = validatePayload(payload);
     if (message) return NextResponse.json({ error: message }, { status: 400 });
 
     const { data, error } = await supabase
-      .from("project")
+      .from("customer")
       .insert(payload)
       .select("*")
       .single();
 
     if (error) return databaseError(error, "เพิ่มข้อมูล");
-    return NextResponse.json({ project: data }, { status: 201 });
+    return NextResponse.json({ customer: data }, { status: 201 });
   } catch (error) {
-    console.error("POST project:", error);
+    console.error("POST customer:", error);
     return NextResponse.json({ error: "เพิ่มข้อมูลไม่สำเร็จ" }, { status: 500 });
   }
 }
@@ -71,7 +64,7 @@ export async function PUT(request: Request) {
   }
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id") ?? searchParams.get("project_id");
+    const id = searchParams.get("id") ?? searchParams.get("customer_id");
     if (!id || id.length > 36) {
       return NextResponse.json({ error: "กรุณาระบุ id ที่ถูกต้อง" }, { status: 400 });
     }
@@ -81,7 +74,7 @@ export async function PUT(request: Request) {
     }
 
     // รับเฉพาะคอลัมน์ที่แก้ไขได้ใน schema
-    const fields = ["customer_id","description_project","status","base_cost","labor_cost","service_percent","final_cost","order_name"];
+    const fields = ["customer_name","phone_number","line_id"];
     const updates: Record<string, unknown> = {};
     for (const field of fields) {
       if (Object.prototype.hasOwnProperty.call(body, field)) updates[field] = body[field];
@@ -93,17 +86,17 @@ export async function PUT(request: Request) {
     if (message) return NextResponse.json({ error: message }, { status: 400 });
 
     const { data, error } = await supabase
-      .from("project")
+      .from("customer")
       .update(updates)
-      .eq("project_id", id)
+      .eq("customer_id", id)
       .select("*")
       .maybeSingle();
 
     if (error) return databaseError(error, "แก้ไขข้อมูล");
     if (!data) return NextResponse.json({ error: "ไม่พบรายการ หรือไม่มีสิทธิ์แก้ไข" }, { status: 404 });
-    return NextResponse.json({ project: data });
+    return NextResponse.json({ customer: data });
   } catch (error) {
-    console.error("PUT project:", error);
+    console.error("PUT customer:", error);
     return NextResponse.json({ error: "แก้ไขข้อมูลไม่สำเร็จ" }, { status: 500 });
   }
 }
@@ -115,22 +108,22 @@ export async function DELETE(request: Request) {
   }
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id") ?? searchParams.get("project_id");
+    const id = searchParams.get("id") ?? searchParams.get("customer_id");
     if (!id || id.length > 36) {
       return NextResponse.json({ error: "กรุณาระบุ id ที่ถูกต้อง" }, { status: 400 });
     }
     const { data, error } = await supabase
-      .from("project")
+      .from("customer")
       .delete()
-      .eq("project_id", id)
-      .select("project_id")
+      .eq("customer_id", id)
+      .select("customer_id")
       .maybeSingle();
 
     if (error) return databaseError(error, "ลบข้อมูล");
     if (!data) return NextResponse.json({ error: "ไม่พบรายการ หรือไม่มีสิทธิ์ลบ" }, { status: 404 });
     return NextResponse.json({ message: "ลบข้อมูลแล้ว", deleted: data });
   } catch (error) {
-    console.error("DELETE project:", error);
+    console.error("DELETE customer:", error);
     return NextResponse.json({ error: "ลบข้อมูลไม่สำเร็จ" }, { status: 500 });
   }
 }
@@ -138,37 +131,22 @@ export async function DELETE(request: Request) {
 // ตรวจข้อมูลก่อนส่งไป Supabase; partial ใช้เมื่อแก้ไขบางช่อง
 function validatePayload(payload: Record<string, unknown>, partial = false): string | null {
   if (!partial) {
-    const required = ["project_id","customer_id","status","base_cost","labor_cost","service_percent","final_cost","order_name"];
+    const required = ["customer_id","customer_name","phone_number"];
     for (const field of required) {
       if (payload[field] === undefined || payload[field] === null) return `กรุณาระบุ ${field}`;
     }
   }
-  if (payload.project_id !== undefined) {
-    if (typeof payload.project_id !== "string" || payload.project_id.length > 36 || !payload.project_id.trim()) return "project_id ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 36 ตัวอักษร";
-  }
   if (payload.customer_id !== undefined) {
     if (typeof payload.customer_id !== "string" || payload.customer_id.length > 36 || !payload.customer_id.trim()) return "customer_id ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 36 ตัวอักษร";
   }
-  if (payload.description_project !== undefined && payload.description_project !== null) {
-    if (typeof payload.description_project !== "string" || payload.description_project.length > 10000) return "description_project ต้องเป็นข้อความ ยาวไม่เกิน 10000 ตัวอักษร";
+  if (payload.customer_name !== undefined) {
+    if (typeof payload.customer_name !== "string" || payload.customer_name.length > 255 || !payload.customer_name.trim()) return "customer_name ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 255 ตัวอักษร";
   }
-  if (payload.status !== undefined) {
-    if (typeof payload.status !== "string" || payload.status.length > 50 || !payload.status.trim()) return "status ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 50 ตัวอักษร";
+  if (payload.phone_number !== undefined) {
+    if (typeof payload.phone_number !== "string" || payload.phone_number.length > 30 || !payload.phone_number.trim()) return "phone_number ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 30 ตัวอักษร";
   }
-  if (payload.base_cost !== undefined) {
-    if (typeof payload.base_cost !== "number" || !Number.isFinite(payload.base_cost) || payload.base_cost < 0) return "base_cost ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";
-  }
-  if (payload.labor_cost !== undefined) {
-    if (typeof payload.labor_cost !== "number" || !Number.isFinite(payload.labor_cost) || payload.labor_cost < 0) return "labor_cost ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";
-  }
-  if (payload.service_percent !== undefined) {
-    if (typeof payload.service_percent !== "number" || !Number.isFinite(payload.service_percent) || payload.service_percent < 0) return "service_percent ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";
-  }
-  if (payload.final_cost !== undefined) {
-    if (typeof payload.final_cost !== "number" || !Number.isFinite(payload.final_cost) || payload.final_cost < 0) return "final_cost ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";
-  }
-  if (payload.order_name !== undefined) {
-    if (typeof payload.order_name !== "string" || payload.order_name.length > 255 || !payload.order_name.trim()) return "order_name ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 255 ตัวอักษร";
+  if (payload.line_id !== undefined && payload.line_id !== null) {
+    if (typeof payload.line_id !== "string" || payload.line_id.length > 255) return "line_id ต้องเป็นข้อความ ยาวไม่เกิน 255 ตัวอักษร";
   }
   return null;
 }
@@ -180,7 +158,7 @@ function allowedOrigin(request: Request) {
 
 // 409: รหัสซ้ำหรือมีข้อมูลอ้างอิง; 403: ไม่มีสิทธิ์; 400: ข้อมูลไม่ตรง schema
 function databaseError(error: { code: string; message: string }, action: string) {
-  console.error(`project ${action}:`, error);
+  console.error(`customer ${action}:`, error);
   if (error.code === "23505") {
     return NextResponse.json({ error: "มีรายการที่ใช้รหัสนี้อยู่แล้ว" }, { status: 409 });
   }

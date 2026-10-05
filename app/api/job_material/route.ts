@@ -5,22 +5,20 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    let query = supabase.from("project").select("*");
-    const id = searchParams.get("id") ?? searchParams.get("project_id");
-    if (id) query = query.eq("project_id", id);
-    const customer_id = searchParams.get("customer_id");
-    if (customer_id) query = query.eq("customer_id", customer_id);
-    const status = searchParams.get("status");
-    if (status) query = query.eq("status", status);
+    let query = supabase.from("job_material").select("*");
+    const id = searchParams.get("id") ?? searchParams.get("job_material_id");
+    if (id) query = query.eq("job_material_id", id);
+    const project_id = searchParams.get("project_id");
+    if (project_id) query = query.eq("project_id", project_id);
 
     const { data, error } = await query;
     if (error) return databaseError(error, "โหลดข้อมูล");
 
-    return NextResponse.json({ projects: data }, {
+    return NextResponse.json({ job_materials: data }, {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
-    console.error("GET project:", error);
+    console.error("GET job_material:", error);
     return NextResponse.json({ error: "โหลดข้อมูลไม่สำเร็จ" }, { status: 500 });
   }
 }
@@ -37,29 +35,27 @@ export async function POST(request: Request) {
     }
 
     const payload = {
-      project_id: body.project_id ?? crypto.randomUUID(),
-      customer_id: body.customer_id,
-      description_project: body.description_project ?? null,
-      status: body.status,
-      base_cost: body.base_cost,
-      labor_cost: body.labor_cost,
-      service_percent: body.service_percent,
-      final_cost: body.final_cost,
-      order_name: body.order_name,
+      job_material_id: body.job_material_id ?? crypto.randomUUID(),
+      project_id: body.project_id,
+      quantity: body.quantity,
+      material_name: body.material_name,
+      use_for: body.use_for ?? null,
+      unit: body.unit,
+      unit_cost: body.unit_cost,
     };
     const message = validatePayload(payload);
     if (message) return NextResponse.json({ error: message }, { status: 400 });
 
     const { data, error } = await supabase
-      .from("project")
+      .from("job_material")
       .insert(payload)
       .select("*")
       .single();
 
     if (error) return databaseError(error, "เพิ่มข้อมูล");
-    return NextResponse.json({ project: data }, { status: 201 });
+    return NextResponse.json({ job_material: data }, { status: 201 });
   } catch (error) {
-    console.error("POST project:", error);
+    console.error("POST job_material:", error);
     return NextResponse.json({ error: "เพิ่มข้อมูลไม่สำเร็จ" }, { status: 500 });
   }
 }
@@ -71,7 +67,7 @@ export async function PUT(request: Request) {
   }
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id") ?? searchParams.get("project_id");
+    const id = searchParams.get("id") ?? searchParams.get("job_material_id");
     if (!id || id.length > 36) {
       return NextResponse.json({ error: "กรุณาระบุ id ที่ถูกต้อง" }, { status: 400 });
     }
@@ -81,7 +77,7 @@ export async function PUT(request: Request) {
     }
 
     // รับเฉพาะคอลัมน์ที่แก้ไขได้ใน schema
-    const fields = ["customer_id","description_project","status","base_cost","labor_cost","service_percent","final_cost","order_name"];
+    const fields = ["project_id","quantity","material_name","use_for","unit","unit_cost"];
     const updates: Record<string, unknown> = {};
     for (const field of fields) {
       if (Object.prototype.hasOwnProperty.call(body, field)) updates[field] = body[field];
@@ -93,17 +89,17 @@ export async function PUT(request: Request) {
     if (message) return NextResponse.json({ error: message }, { status: 400 });
 
     const { data, error } = await supabase
-      .from("project")
+      .from("job_material")
       .update(updates)
-      .eq("project_id", id)
+      .eq("job_material_id", id)
       .select("*")
       .maybeSingle();
 
     if (error) return databaseError(error, "แก้ไขข้อมูล");
     if (!data) return NextResponse.json({ error: "ไม่พบรายการ หรือไม่มีสิทธิ์แก้ไข" }, { status: 404 });
-    return NextResponse.json({ project: data });
+    return NextResponse.json({ job_material: data });
   } catch (error) {
-    console.error("PUT project:", error);
+    console.error("PUT job_material:", error);
     return NextResponse.json({ error: "แก้ไขข้อมูลไม่สำเร็จ" }, { status: 500 });
   }
 }
@@ -115,22 +111,22 @@ export async function DELETE(request: Request) {
   }
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id") ?? searchParams.get("project_id");
+    const id = searchParams.get("id") ?? searchParams.get("job_material_id");
     if (!id || id.length > 36) {
       return NextResponse.json({ error: "กรุณาระบุ id ที่ถูกต้อง" }, { status: 400 });
     }
     const { data, error } = await supabase
-      .from("project")
+      .from("job_material")
       .delete()
-      .eq("project_id", id)
-      .select("project_id")
+      .eq("job_material_id", id)
+      .select("job_material_id")
       .maybeSingle();
 
     if (error) return databaseError(error, "ลบข้อมูล");
     if (!data) return NextResponse.json({ error: "ไม่พบรายการ หรือไม่มีสิทธิ์ลบ" }, { status: 404 });
     return NextResponse.json({ message: "ลบข้อมูลแล้ว", deleted: data });
   } catch (error) {
-    console.error("DELETE project:", error);
+    console.error("DELETE job_material:", error);
     return NextResponse.json({ error: "ลบข้อมูลไม่สำเร็จ" }, { status: 500 });
   }
 }
@@ -138,37 +134,31 @@ export async function DELETE(request: Request) {
 // ตรวจข้อมูลก่อนส่งไป Supabase; partial ใช้เมื่อแก้ไขบางช่อง
 function validatePayload(payload: Record<string, unknown>, partial = false): string | null {
   if (!partial) {
-    const required = ["project_id","customer_id","status","base_cost","labor_cost","service_percent","final_cost","order_name"];
+    const required = ["job_material_id","project_id","quantity","material_name","unit","unit_cost"];
     for (const field of required) {
       if (payload[field] === undefined || payload[field] === null) return `กรุณาระบุ ${field}`;
     }
   }
+  if (payload.job_material_id !== undefined) {
+    if (typeof payload.job_material_id !== "string" || payload.job_material_id.length > 36 || !payload.job_material_id.trim()) return "job_material_id ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 36 ตัวอักษร";
+  }
   if (payload.project_id !== undefined) {
     if (typeof payload.project_id !== "string" || payload.project_id.length > 36 || !payload.project_id.trim()) return "project_id ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 36 ตัวอักษร";
   }
-  if (payload.customer_id !== undefined) {
-    if (typeof payload.customer_id !== "string" || payload.customer_id.length > 36 || !payload.customer_id.trim()) return "customer_id ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 36 ตัวอักษร";
+  if (payload.quantity !== undefined) {
+    if (typeof payload.quantity !== "number" || !Number.isFinite(payload.quantity) || payload.quantity < 0) return "quantity ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";
   }
-  if (payload.description_project !== undefined && payload.description_project !== null) {
-    if (typeof payload.description_project !== "string" || payload.description_project.length > 10000) return "description_project ต้องเป็นข้อความ ยาวไม่เกิน 10000 ตัวอักษร";
+  if (payload.material_name !== undefined) {
+    if (typeof payload.material_name !== "string" || payload.material_name.length > 255 || !payload.material_name.trim()) return "material_name ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 255 ตัวอักษร";
   }
-  if (payload.status !== undefined) {
-    if (typeof payload.status !== "string" || payload.status.length > 50 || !payload.status.trim()) return "status ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 50 ตัวอักษร";
+  if (payload.use_for !== undefined && payload.use_for !== null) {
+    if (typeof payload.use_for !== "string" || payload.use_for.length > 10000) return "use_for ต้องเป็นข้อความ ยาวไม่เกิน 10000 ตัวอักษร";
   }
-  if (payload.base_cost !== undefined) {
-    if (typeof payload.base_cost !== "number" || !Number.isFinite(payload.base_cost) || payload.base_cost < 0) return "base_cost ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";
+  if (payload.unit !== undefined) {
+    if (typeof payload.unit !== "string" || payload.unit.length > 50 || !payload.unit.trim()) return "unit ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 50 ตัวอักษร";
   }
-  if (payload.labor_cost !== undefined) {
-    if (typeof payload.labor_cost !== "number" || !Number.isFinite(payload.labor_cost) || payload.labor_cost < 0) return "labor_cost ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";
-  }
-  if (payload.service_percent !== undefined) {
-    if (typeof payload.service_percent !== "number" || !Number.isFinite(payload.service_percent) || payload.service_percent < 0) return "service_percent ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";
-  }
-  if (payload.final_cost !== undefined) {
-    if (typeof payload.final_cost !== "number" || !Number.isFinite(payload.final_cost) || payload.final_cost < 0) return "final_cost ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";
-  }
-  if (payload.order_name !== undefined) {
-    if (typeof payload.order_name !== "string" || payload.order_name.length > 255 || !payload.order_name.trim()) return "order_name ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 255 ตัวอักษร";
+  if (payload.unit_cost !== undefined) {
+    if (typeof payload.unit_cost !== "number" || !Number.isFinite(payload.unit_cost) || payload.unit_cost < 0) return "unit_cost ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";
   }
   return null;
 }
@@ -180,7 +170,7 @@ function allowedOrigin(request: Request) {
 
 // 409: รหัสซ้ำหรือมีข้อมูลอ้างอิง; 403: ไม่มีสิทธิ์; 400: ข้อมูลไม่ตรง schema
 function databaseError(error: { code: string; message: string }, action: string) {
-  console.error(`project ${action}:`, error);
+  console.error(`job_material ${action}:`, error);
   if (error.code === "23505") {
     return NextResponse.json({ error: "มีรายการที่ใช้รหัสนี้อยู่แล้ว" }, { status: 409 });
   }
