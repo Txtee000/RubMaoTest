@@ -16,7 +16,6 @@ export const statusLabels: Record<ProjectStatus, string> = {
 
 export const appointmentLabels = {
   site_visit: "ดูหน้างาน",
-  installation: "ติดตั้งหน้างาน",
   pickup: "รับที่ร้าน",
 };
 
@@ -60,8 +59,12 @@ export function calculatePrice(
 }
 
 export function projectPrice(project: Project) {
-  const source = project.quotation ?? project;
-  return calculatePrice(source.materials, source.labor_cost, source.service_percent);
+  const total_cost = round(project.base_cost + project.labor_cost);
+  return {
+    base_cost: project.base_cost, labor_cost: project.labor_cost,
+    service_percent: project.service_percent, total_cost,
+    service_cost: round(project.final_cost - total_cost), final_cost: project.final_cost,
+  };
 }
 
 export function calculatePayments(
@@ -80,17 +83,14 @@ export function calculatePayments(
 export function canChangeStatus(
   current: ProjectStatus,
   next: ProjectStatus,
-  delivery?: Project["delivery_type"],
   remaining = 0,
 ) {
   if (next === "completed") return current === "accepted" && remaining === 0;
-  if (current === "shop_passed" && next === "delivered") return delivery === "pickup";
-  if (current === "shop_passed" && next === "waiting_site_inspection")
-    return delivery === "installation";
   const allowed: Partial<Record<ProjectStatus, ProjectStatus[]>> = {
     pending: ["estimated"],
     estimated: ["confirmed"],
     confirmed: ["waiting_shop_inspection"],
+    shop_passed: ["delivered", "waiting_site_inspection"],
     waiting_shop_inspection: ["shop_passed", "revision"],
     waiting_site_inspection: ["site_passed", "revision"],
     site_passed: ["delivered"],

@@ -7,8 +7,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     let query = supabase.from("work_on").select("*");
     const employee_id = searchParams.get("employee_id");
+    if (employee_id && !/^[0-9]+$/.test(employee_id)) {
+      return NextResponse.json({ error: "employee_id ต้องเป็นจำนวนเต็ม" }, { status: 400 });
+    }
     if (employee_id) query = query.eq("employee_id", employee_id);
     const project_id = searchParams.get("project_id");
+    if (project_id && !/^[0-9]+$/.test(project_id)) {
+      return NextResponse.json({ error: "project_id ต้องเป็นจำนวนเต็ม" }, { status: 400 });
+    }
     if (project_id) query = query.eq("project_id", project_id);
 
     const { data, error } = await query;
@@ -39,7 +45,10 @@ export async function POST(request: Request) {
       project_id: body.project_id,
     };
     const message = validatePayload(payload);
-    if (message) return NextResponse.json({ error: message }, { status: 400 });
+    if (message) {
+      console.error(`work_on validation: ${message}`);
+      return NextResponse.json({ error: message, code: "VALIDATION_ERROR" }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("work_on")
@@ -64,7 +73,7 @@ export async function PUT(request: Request) {
     const { searchParams } = new URL(request.url);
     const employee_id = searchParams.get("employee_id");
     const project_id = searchParams.get("project_id");
-    if (!employee_id || !project_id || employee_id.length > 36 || project_id.length > 36) {
+    if (!employee_id || !project_id || !/^[0-9]+$/.test(employee_id) || !/^[0-9]+$/.test(project_id)) {
       return NextResponse.json({ error: "กรุณาระบุ employee_id และ project_id" }, { status: 400 });
     }
     const body = await request.json().catch(() => null);
@@ -82,7 +91,10 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "กรุณาระบุข้อมูลที่ต้องการแก้ไข" }, { status: 400 });
     }
     const message = validatePayload(updates, true);
-    if (message) return NextResponse.json({ error: message }, { status: 400 });
+    if (message) {
+      console.error(`work_on validation: ${message}`);
+      return NextResponse.json({ error: message, code: "VALIDATION_ERROR" }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("work_on")
@@ -110,7 +122,7 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const employee_id = searchParams.get("employee_id");
     const project_id = searchParams.get("project_id");
-    if (!employee_id || !project_id || employee_id.length > 36 || project_id.length > 36) {
+    if (!employee_id || !project_id || !/^[0-9]+$/.test(employee_id) || !/^[0-9]+$/.test(project_id)) {
       return NextResponse.json({ error: "กรุณาระบุ employee_id และ project_id" }, { status: 400 });
     }
     const { data, error } = await supabase
@@ -139,10 +151,18 @@ function validatePayload(payload: Record<string, unknown>, partial = false): str
     }
   }
   if (payload.employee_id !== undefined) {
-    if (typeof payload.employee_id !== "string" || payload.employee_id.length > 36 || !payload.employee_id.trim()) return "employee_id ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 36 ตัวอักษร";
+    const id = payload.employee_id;
+    if (!((typeof id === "number" && Number.isSafeInteger(id) && id >= 0) ||
+      (typeof id === "string" && /^[0-9]+$/.test(id)))) {
+      return "employee_id ต้องเป็นจำนวนเต็ม";
+    }
   }
   if (payload.project_id !== undefined) {
-    if (typeof payload.project_id !== "string" || payload.project_id.length > 36 || !payload.project_id.trim()) return "project_id ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 36 ตัวอักษร";
+    const id = payload.project_id;
+    if (!((typeof id === "number" && Number.isSafeInteger(id) && id >= 0) ||
+      (typeof id === "string" && /^[0-9]+$/.test(id)))) {
+      return "project_id ต้องเป็นจำนวนเต็ม";
+    }
   }
   return null;
 }
@@ -165,7 +185,17 @@ function databaseError(error: { code: string; message: string }, action: string)
     return NextResponse.json({ error: "ไม่มีสิทธิ์ดำเนินการกับข้อมูลนี้" }, { status: 403 });
   }
   if (error.code.startsWith("22") || error.code.startsWith("23")) {
-    return NextResponse.json({ error: "ข้อมูลไม่ตรงกับโครงสร้างตาราง" }, { status: 400 });
+    return NextResponse.json({
+      error: process.env.NODE_ENV === "development"
+        ? `ข้อมูลไม่ตรงกับโครงสร้างตาราง [${error.code}]: ${error.message}`
+        : "ข้อมูลไม่ตรงกับโครงสร้างตาราง",
+      code: error.code,
+    }, { status: 400 });
   }
-  return NextResponse.json({ error: `${action}ไม่สำเร็จ` }, { status: 500 });
+  return NextResponse.json({
+    error: process.env.NODE_ENV === "development"
+      ? `${action}ไม่สำเร็จ [${error.code}]: ${error.message}`
+      : `${action}ไม่สำเร็จ`,
+    code: error.code,
+  }, { status: 500 });
 }

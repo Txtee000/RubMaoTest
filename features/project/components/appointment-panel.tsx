@@ -11,7 +11,7 @@ import type { Appointment, Project } from "../types";
 export function AppointmentPanel({ project }: { project: Project }) {
   const { data, saveAppointment } = useProjects();
   const appointments = data.appointments.filter((a) => a.project_id === project.id);
-  const [editingId, setEditingId] = useState("");
+  const [editingId, setEditingId] = useState(0);
   const [type, setType] = useState<Appointment["appointment_type"]>("site_visit");
   const [date, setDate] = useState("");
   const [hour, setHour] = useState("");
@@ -19,11 +19,12 @@ export function AppointmentPanel({ project }: { project: Project }) {
   const [location, setLocation] = useState("");
   const [message, setMessage] = useState("");
 
-  function completeAppointment(appointment: Appointment) {
-    saveAppointment({ ...appointment, status: "completed" });
+  async function completeAppointment(appointment: Appointment) {
+    const saved = await saveAppointment({ ...appointment, status: "completed" });
+    if (!saved) { setMessage("บันทึกไม่สำเร็จ ดูรายละเอียดด้านบน"); return; }
     // ปิดฟอร์มของนัดที่เสร็จแล้ว เพื่อไม่ให้บันทึกกลับเป็นรอดำเนินการ
     if (editingId === appointment.id) {
-      setEditingId("");
+      setEditingId(0);
       setDate("");
       setHour("");
       setMinute("00");
@@ -33,21 +34,22 @@ export function AppointmentPanel({ project }: { project: Project }) {
     setMessage("อัปเดตนัดหมายเป็นดำเนินการแล้ว");
   }
 
-  function save(event: FormEvent) {
+  async function save(event: FormEvent) {
     event.preventDefault();
     if (!location.trim()) {
       setMessage("กรอกสถานที่นัดหมายก่อนบันทึก");
       return;
     }
-    saveAppointment({
-      id: editingId || crypto.randomUUID(),
+    const saved = await saveAppointment({
+      id: editingId, // 0 หมายถึงนัดใหม่; ฐานข้อมูลสร้าง ID ตอน POST
       project_id: project.id,
       appointment_type: type,
       appointment_datetime: `${date}T${hour}:${minute}:00+07:00`,
       location: location.trim(),
       status: "pending",
     });
-    setEditingId("");
+    if (!saved) { setMessage("บันทึกไม่สำเร็จ ดูรายละเอียดด้านบน"); return; }
+    setEditingId(0);
     setDate("");
     setHour("");
     setMinute("00");
@@ -76,9 +78,14 @@ export function AppointmentPanel({ project }: { project: Project }) {
                     onClick={() => {
                       setEditingId(a.id);
                       setType(a.appointment_type);
-                      setDate(a.appointment_datetime.slice(0, 10));
-                      setHour(a.appointment_datetime.slice(11, 13));
-                      setMinute(a.appointment_datetime.slice(14, 16));
+                      const parts = new Intl.DateTimeFormat("en-CA", {
+                        timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit",
+                        hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+                      }).formatToParts(new Date(a.appointment_datetime));
+                      const part = (name: string) => parts.find((item) => item.type === name)?.value ?? "";
+                      setDate(`${part("year")}-${part("month")}-${part("day")}`);
+                      setHour(part("hour"));
+                      setMinute(part("minute"));
                       setLocation(a.location);
                       setMessage("");
                     }}
@@ -190,7 +197,7 @@ export function AppointmentPanel({ project }: { project: Project }) {
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      setEditingId("");
+                      setEditingId(0);
                       setDate("");
                       setHour("");
                       setMinute("00");

@@ -11,7 +11,7 @@ export function PaymentPanel({
   onSave,
 }: {
   project: Project;
-  onSave: (project: Project) => void;
+  onSave: (project: Project) => Promise<boolean>;
 }) {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(
@@ -24,53 +24,41 @@ export function PaymentPanel({
   const payment = calculatePayments(price.final_cost, project.payments);
   const canReceive = !["pending", "estimated", "completed"].includes(project.status);
 
-  function savePayment(event: FormEvent) {
+  async function savePayment(event: FormEvent) {
     event.preventDefault();
     const value = Math.round(Number(amount) * 100) / 100;
     if (!Number.isFinite(value) || value <= 0 || value > payment.remaining) {
       setMessage("จำนวนเงินต้องมากกว่า 0 และไม่เกินยอดคงเหลือ");
       return;
     }
-    onSave({
+    const saved = await onSave({
       ...project,
       payments: [
         ...project.payments,
         {
-          id: crypto.randomUUID(),
+          id: -1, // รหัสชั่วคราว; ไม่ส่งเป็น primary key ใน POST
           amount: value,
           payment_date: date,
           proof_of_payment: proof.trim(),
           status,
         },
       ],
-      history: [
-        ...project.history,
-        {
-          date: new Date().toISOString(),
-          text: `${status === "paid" ? "รับเงิน" : "บันทึกเงินรอตรวจสอบ"} ${money(value)} บาท`,
-        },
-      ],
     });
+    if (!saved) { setMessage("บันทึกไม่สำเร็จ ดูรายละเอียดด้านบน"); return; }
     setAmount("");
     setProof("");
     setMessage("บันทึกรายการชำระเงินแล้ว");
   }
-  function confirmPayment(item: Payment) {
+  async function confirmPayment(item: Payment) {
     if (item.amount > payment.remaining) {
       setMessage("รายการนี้เกินยอดคงเหลือ กรุณาตรวจสอบจำนวนเงิน");
       return;
     }
-    onSave({
+    const saved = await onSave({
       ...project,
       payments: project.payments.map((p) => (p.id === item.id ? { ...p, status: "paid" } : p)),
-      history: [
-        ...project.history,
-        {
-          date: new Date().toISOString(),
-          text: `ตรวจสอบและยืนยันรับเงิน ${money(item.amount)} บาท`,
-        },
-      ],
     });
+    if (!saved) { setMessage("บันทึกไม่สำเร็จ ดูรายละเอียดด้านบน"); return; }
     setMessage("ยืนยันรับเงินแล้ว");
   }
   return (
@@ -89,31 +77,6 @@ export function PaymentPanel({
           <strong className="text-blue">฿{money(payment.remaining)}</strong>
         </div>
       </div>
-      <Section
-        title="รูปแบบการชำระเงิน"
-        description="ชำระครบล่วงหน้าได้ โดยยังไม่ปิดงานจนกว่าลูกค้าจะตรวจรับ"
-      >
-        <div className="delivery-options">
-          {[
-            ["deposit", "มัดจำก่อน แล้วจ่ายส่วนที่เหลือ"],
-            ["full", "จ่ายเต็มจำนวน"],
-          ].map(([value, label]) => (
-            <label key={value}>
-              <input
-                type="radio"
-                name="paymentType"
-                value={value}
-                checked={project.payment_type === value}
-                disabled={!canReceive}
-                onChange={() =>
-                  onSave({ ...project, payment_type: value as Project["payment_type"] })
-                }
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-      </Section>
       <Section title="ประวัติการรับเงิน">
         <div className="table-scroll">
           <table className="data-table">
@@ -129,7 +92,7 @@ export function PaymentPanel({
             <tbody>
               {project.payments.map((item) => (
                 <tr key={item.id}>
-                  <td>{formatDate(item.payment_date)}</td>
+                  <td>{item.payment_date ? formatDate(item.payment_date) : "—"}</td>
                   <td>฿{money(item.amount)}</td>
                   <td className="proof-cell">{item.proof_of_payment || "—"}</td>
                   <td>

@@ -1542,13 +1542,6 @@ textarea {
   text-align: center;
   font-size: 11px;
 }
-.bill-demo-note {
-  max-width: 860px;
-  margin: 18px auto 0;
-  font-size: 10px;
-  color: #9cabc0;
-  text-align: center;
-}
 .bill-message {
   max-width: 860px;
   margin: 0 auto 15px;
@@ -1790,7 +1783,6 @@ textarea {
     margin: 14mm;
   }
   .bill-toolbar,
-  .bill-demo-note,
   .bill-message {
     display: none;
   }

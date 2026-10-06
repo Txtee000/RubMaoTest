@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Hammer, LockKeyhole } from "lucide-react";
+import { login } from "@/service/auth";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -15,19 +16,10 @@ export default function LoginPage() {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        setError(result.message || "เข้าสู่ระบบไม่สำเร็จ");
-        setBusy(false);
-        return;
-      }
+      await login(username, password);
       window.location.replace("/");
-    } catch {
-      setError("เชื่อมต่อไม่สำเร็จ กรุณาลองอีกครั้ง");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "เชื่อมต่อไม่สำเร็จ กรุณาลองอีกครั้ง");
       setBusy(false);
     }
   }

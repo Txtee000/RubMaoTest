@@ -14,7 +14,7 @@ export function TaskPage() {
     (p) =>
       p.employee_ids.length &&
       p.status !== "completed" &&
-      (employeeId === "all" || p.employee_ids.includes(employeeId)),
+      (employeeId === "all" || p.employee_ids.includes(Number(employeeId))),
   );
   return (
     <>

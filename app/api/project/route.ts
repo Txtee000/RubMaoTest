@@ -5,10 +5,16 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    let query = supabase.from("project").select("*");
+    let query = supabase.from("project").select("project_id, customer_id, description_project, status, base_cost, labor_cost, service_percent, final_cost, order_name");
     const id = searchParams.get("id") ?? searchParams.get("project_id");
+    if (id && !/^[0-9]+$/.test(id)) {
+      return NextResponse.json({ error: "project_id ต้องเป็นจำนวนเต็ม" }, { status: 400 });
+    }
     if (id) query = query.eq("project_id", id);
     const customer_id = searchParams.get("customer_id");
+    if (customer_id && !/^[0-9]+$/.test(customer_id)) {
+      return NextResponse.json({ error: "customer_id ต้องเป็นจำนวนเต็ม" }, { status: 400 });
+    }
     if (customer_id) query = query.eq("customer_id", customer_id);
     const status = searchParams.get("status");
     if (status) query = query.eq("status", status);
@@ -37,7 +43,6 @@ export async function POST(request: Request) {
     }
 
     const payload = {
-      project_id: body.project_id ?? crypto.randomUUID(),
       customer_id: body.customer_id,
       description_project: body.description_project ?? null,
       status: body.status,
@@ -47,20 +52,27 @@ export async function POST(request: Request) {
       final_cost: body.final_cost,
       order_name: body.order_name,
     };
+    console.log(payload)
     const message = validatePayload(payload);
-    if (message) return NextResponse.json({ error: message }, { status: 400 });
+    if (message) {
+      console.error(`POST project validation: ${message}`);
+      return NextResponse.json({ error: message, code: "VALIDATION_ERROR" }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("project")
       .insert(payload)
-      .select("*")
+      .select("project_id, customer_id, description_project, status, base_cost, labor_cost, service_percent, final_cost, order_name")
       .single();
 
     if (error) return databaseError(error, "เพิ่มข้อมูล");
     return NextResponse.json({ project: data }, { status: 201 });
   } catch (error) {
     console.error("POST project:", error);
-    return NextResponse.json({ error: "เพิ่มข้อมูลไม่สำเร็จ" }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({
+      error: process.env.NODE_ENV === "development" ? `เพิ่มข้อมูลไม่สำเร็จ: ${message}` : "เพิ่มข้อมูลไม่สำเร็จ",
+    }, { status: 500 });
   }
 }
 
@@ -72,7 +84,7 @@ export async function PUT(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id") ?? searchParams.get("project_id");
-    if (!id || id.length > 36) {
+    if (!id || !/^[0-9]+$/.test(id)) {
       return NextResponse.json({ error: "กรุณาระบุ id ที่ถูกต้อง" }, { status: 400 });
     }
     const body = await request.json().catch(() => null);
@@ -81,7 +93,10 @@ export async function PUT(request: Request) {
     }
 
     // รับเฉพาะคอลัมน์ที่แก้ไขได้ใน schema
-    const fields = ["customer_id","description_project","status","base_cost","labor_cost","service_percent","final_cost","order_name"];
+    const fields = [
+      "customer_id", "description_project", "status", "base_cost", "labor_cost",
+      "service_percent", "final_cost", "order_name",
+    ];
     const updates: Record<string, unknown> = {};
     for (const field of fields) {
       if (Object.prototype.hasOwnProperty.call(body, field)) updates[field] = body[field];
@@ -96,7 +111,7 @@ export async function PUT(request: Request) {
       .from("project")
       .update(updates)
       .eq("project_id", id)
-      .select("*")
+      .select("project_id, customer_id, description_project, status, base_cost, labor_cost, service_percent, final_cost, order_name")
       .maybeSingle();
 
     if (error) return databaseError(error, "แก้ไขข้อมูล");
@@ -116,7 +131,7 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id") ?? searchParams.get("project_id");
-    if (!id || id.length > 36) {
+    if (!id || !/^[0-9]+$/.test(id)) {
       return NextResponse.json({ error: "กรุณาระบุ id ที่ถูกต้อง" }, { status: 400 });
     }
     const { data, error } = await supabase
@@ -138,16 +153,17 @@ export async function DELETE(request: Request) {
 // ตรวจข้อมูลก่อนส่งไป Supabase; partial ใช้เมื่อแก้ไขบางช่อง
 function validatePayload(payload: Record<string, unknown>, partial = false): string | null {
   if (!partial) {
-    const required = ["project_id","customer_id","status","base_cost","labor_cost","service_percent","final_cost","order_name"];
+    const required = ["customer_id","status","base_cost","labor_cost","service_percent","final_cost","order_name"];
     for (const field of required) {
       if (payload[field] === undefined || payload[field] === null) return `กรุณาระบุ ${field}`;
     }
   }
-  if (payload.project_id !== undefined) {
-    if (typeof payload.project_id !== "string" || payload.project_id.length > 36 || !payload.project_id.trim()) return "project_id ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 36 ตัวอักษร";
-  }
   if (payload.customer_id !== undefined) {
-    if (typeof payload.customer_id !== "string" || payload.customer_id.length > 36 || !payload.customer_id.trim()) return "customer_id ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 36 ตัวอักษร";
+    const id = payload.customer_id;
+    if (!((typeof id === "number" && Number.isSafeInteger(id) && id >= 0) ||
+      (typeof id === "string" && /^[0-9]+$/.test(id)))) {
+      return "customer_id ต้องเป็นจำนวนเต็ม";
+    }
   }
   if (payload.description_project !== undefined && payload.description_project !== null) {
     if (typeof payload.description_project !== "string" || payload.description_project.length > 10000) return "description_project ต้องเป็นข้อความ ยาวไม่เกิน 10000 ตัวอักษร";
@@ -179,19 +195,29 @@ function allowedOrigin(request: Request) {
 }
 
 // 409: รหัสซ้ำหรือมีข้อมูลอ้างอิง; 403: ไม่มีสิทธิ์; 400: ข้อมูลไม่ตรง schema
-function databaseError(error: { code: string; message: string }, action: string) {
-  console.error(`project ${action}:`, error);
-  if (error.code === "23505") {
+function databaseError(error: { code?: string; message?: string; details?: string; hint?: string }, action: string) {
+  const code = error.code ?? "UNKNOWN";
+  const message = error.message ?? "Supabase ไม่ได้ส่งข้อความผิดพลาดกลับมา";
+  console.error(`project ${action} [${code}]: ${message}; details: ${error.details ?? ""}; hint: ${error.hint ?? ""}`);
+  if (code === "23505") {
     return NextResponse.json({ error: "มีรายการที่ใช้รหัสนี้อยู่แล้ว" }, { status: 409 });
   }
-  if (error.code === "23503") {
+  if (code === "23503") {
     return NextResponse.json({ error: "ข้อมูลอ้างอิงไม่ถูกต้อง หรือรายการนี้มีข้อมูลอื่นอ้างอิงอยู่" }, { status: 409 });
   }
-  if (error.code === "42501") {
+  if (code === "42501") {
     return NextResponse.json({ error: "ไม่มีสิทธิ์ดำเนินการกับข้อมูลนี้" }, { status: 403 });
   }
-  if (error.code.startsWith("22") || error.code.startsWith("23")) {
-    return NextResponse.json({ error: "ข้อมูลไม่ตรงกับโครงสร้างตาราง" }, { status: 400 });
+  if (code.startsWith("22") || code.startsWith("23")) {
+    return NextResponse.json({
+      error: process.env.NODE_ENV === "development"
+        ? `ข้อมูลไม่ตรงกับโครงสร้างตาราง [${code}]: ${message}`
+        : "ข้อมูลไม่ตรงกับโครงสร้างตาราง",
+      code,
+    }, { status: 400 });
   }
-  return NextResponse.json({ error: `${action}ไม่สำเร็จ` }, { status: 500 });
+  return NextResponse.json({
+    error: process.env.NODE_ENV === "development" ? `${action}ไม่สำเร็จ [${code}]: ${message}` : `${action}ไม่สำเร็จ`,
+    code,
+  }, { status: 500 });
 }

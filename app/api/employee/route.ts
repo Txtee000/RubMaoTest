@@ -7,6 +7,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     let query = supabase.from("employee").select("*");
     const id = searchParams.get("id") ?? searchParams.get("employee_id");
+    if (id && !/^[0-9]+$/.test(id)) {
+      return NextResponse.json({ error: "id ต้องเป็นจำนวนเต็ม" }, { status: 400 });
+    }
     if (id) query = query.eq("employee_id", id);
     const role = searchParams.get("role");
     if (role) query = query.eq("role", role);
@@ -35,13 +38,15 @@ export async function POST(request: Request) {
     }
 
     const payload = {
-      employee_id: body.employee_id ?? crypto.randomUUID(),
       employee_name: body.employee_name,
       role: body.role,
       phone_number: body.phone_number,
     };
     const message = validatePayload(payload);
-    if (message) return NextResponse.json({ error: message }, { status: 400 });
+    if (message) {
+      console.error(`employee validation: ${message}`);
+      return NextResponse.json({ error: message, code: "VALIDATION_ERROR" }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("employee")
@@ -65,7 +70,7 @@ export async function PUT(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id") ?? searchParams.get("employee_id");
-    if (!id || id.length > 36) {
+    if (!id || !/^[0-9]+$/.test(id)) {
       return NextResponse.json({ error: "กรุณาระบุ id ที่ถูกต้อง" }, { status: 400 });
     }
     const body = await request.json().catch(() => null);
@@ -83,7 +88,10 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "กรุณาระบุข้อมูลที่ต้องการแก้ไข" }, { status: 400 });
     }
     const message = validatePayload(updates, true);
-    if (message) return NextResponse.json({ error: message }, { status: 400 });
+    if (message) {
+      console.error(`employee validation: ${message}`);
+      return NextResponse.json({ error: message, code: "VALIDATION_ERROR" }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("employee")
@@ -109,7 +117,7 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id") ?? searchParams.get("employee_id");
-    if (!id || id.length > 36) {
+    if (!id || !/^[0-9]+$/.test(id)) {
       return NextResponse.json({ error: "กรุณาระบุ id ที่ถูกต้อง" }, { status: 400 });
     }
     const { data, error } = await supabase
@@ -131,13 +139,10 @@ export async function DELETE(request: Request) {
 // ตรวจข้อมูลก่อนส่งไป Supabase; partial ใช้เมื่อแก้ไขบางช่อง
 function validatePayload(payload: Record<string, unknown>, partial = false): string | null {
   if (!partial) {
-    const required = ["employee_id","employee_name","role","phone_number"];
+    const required = ["employee_name","role","phone_number"];
     for (const field of required) {
       if (payload[field] === undefined || payload[field] === null) return `กรุณาระบุ ${field}`;
     }
-  }
-  if (payload.employee_id !== undefined) {
-    if (typeof payload.employee_id !== "string" || payload.employee_id.length > 36 || !payload.employee_id.trim()) return "employee_id ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 36 ตัวอักษร";
   }
   if (payload.employee_name !== undefined) {
     if (typeof payload.employee_name !== "string" || payload.employee_name.length > 255 || !payload.employee_name.trim()) return "employee_name ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 255 ตัวอักษร";
@@ -169,7 +174,17 @@ function databaseError(error: { code: string; message: string }, action: string)
     return NextResponse.json({ error: "ไม่มีสิทธิ์ดำเนินการกับข้อมูลนี้" }, { status: 403 });
   }
   if (error.code.startsWith("22") || error.code.startsWith("23")) {
-    return NextResponse.json({ error: "ข้อมูลไม่ตรงกับโครงสร้างตาราง" }, { status: 400 });
+    return NextResponse.json({
+      error: process.env.NODE_ENV === "development"
+        ? `ข้อมูลไม่ตรงกับโครงสร้างตาราง [${error.code}]: ${error.message}`
+        : "ข้อมูลไม่ตรงกับโครงสร้างตาราง",
+      code: error.code,
+    }, { status: 400 });
   }
-  return NextResponse.json({ error: `${action}ไม่สำเร็จ` }, { status: 500 });
+  return NextResponse.json({
+    error: process.env.NODE_ENV === "development"
+      ? `${action}ไม่สำเร็จ [${error.code}]: ${error.message}`
+      : `${action}ไม่สำเร็จ`,
+    code: error.code,
+  }, { status: 500 });
 }

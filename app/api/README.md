@@ -22,12 +22,14 @@ CRUD อยู่ใน `route.ts` ของแต่ละตารางโด
 - `DELETE /api/project?id=รหัสงาน`: ลบรายการ ตอบ `{ "message": "ลบข้อมูลแล้ว", "deleted": {...} }`
 
 ตารางทั่วไปใช้ `?id=...` หรือชื่อ primary key จริง เช่น `?project_id=...` ได้
-POST จะสร้าง UUID ให้ถ้าไม่ได้ส่ง primary key มา ส่วน PUT ไม่เปลี่ยน primary key
+ID ทุกตารางเป็นจำนวนเต็ม รวมถึง foreign key
+POST ไม่รับ primary key ของรายการใหม่ ให้ฐานข้อมูลสร้าง ID อัตโนมัติ (identity/default)
+work_on ส่ง employee_id และ project_id ของรายการที่มีอยู่แล้ว ส่วน PUT ไม่เปลี่ยน primary key ของตารางอื่น
 GET ตอบเป็น array แม้ระบุรหัสของรายการเดียว
 
 `work_on` ใช้รหัสคู่: `PUT` และ `DELETE` ต้องระบุ
 `/api/work_on?employee_id=รหัสพนักงาน&project_id=รหัสงาน`
-POST รับ `{ "employee_id": "...", "project_id": "..." }`
+POST รับ `{ "employee_id": 1, "project_id": 1 }`
 PUT ส่ง `employee_id` หรือ `project_id` ใหม่ใน body เพื่อเปลี่ยนการมอบหมายเดิม
 GET ตอบ `{ "assignments": [...] }` และ POST/PUT ตอบ `{ "assignment": {...} }`
 
@@ -69,7 +71,7 @@ if (!projectResponse.ok) throw new Error(projectResult.error);
 ตัวอย่างแก้ไขและลบ (ใช้รหัสที่ได้รับจาก POST):
 
 ```ts
-const id = encodeURIComponent(projectResult.project.project_id);
+const id = encodeURIComponent(String(projectResult.project.project_id));
 
 const updateResponse = await fetch(`/api/project?id=${id}`, {
   method: "PUT",
@@ -95,37 +97,38 @@ if (!deleteResponse.ok) throw new Error(deleteResult.error);
 
 // appointment
 {
-  "project_id": "รหัสงาน", "customer_id": "รหัสลูกค้า",
+  "project_id": 1, "customer_id": 1,
   "appointment_type": "site_visit", "location": "บ้านลูกค้า",
   "appointment_datetime": "2026-10-06T09:00:00+07:00", "status": "pending"
 }
 
 // job_material
 {
-  "project_id": "รหัสงาน", "material_name": "เหล็ก", "quantity": 2,
+  "project_id": 1, "material_name": "เหล็ก", "quantity": 2,
   "unit": "เส้น", "unit_cost": 500, "use_for": "โครงประตู"
 }
 
 // payment
 {
-  "project_id": "รหัสงาน", "amount": 1000, "status": "paid",
+  "project_id": 1, "amount": 1000, "status": "paid",
   "payment_date": "2026-10-06T09:00:00+07:00", "proof_of_payment": null
 }
 ```
 
 บล็อกด้านบนแยกตัวอย่างด้วย comment; JSON ที่ส่งจริงต้องไม่มี comment
-appointment_type ใช้ `site_visit` หรือ `pickup` ตาม schema ปัจจุบัน
+appointment_type ใช้ `site_visit` หรือ `pickup` ตาม schema เดิม
 reminder_status เป็น `pending` โดยค่าเริ่มต้น และแก้เป็น `send` หรือ `failed` ได้
 
 ## การตั้งค่าและข้อจำกัด
 
-ต้องมีตารางตาม `schema/schema.sql` และตั้งค่า `NEXT_PUBLIC_SUPABASE_URL`
+ต้องมีตารางตาม `schema/schema.sql` เดิม และตั้งค่า `NEXT_PUBLIC_SUPABASE_URL`
 กับ `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` ตาม client เดิม
 สิทธิ์ฐานข้อมูลและ RLS ต้องอนุญาตให้ client นี้อ่าน/เขียนด้วย
 session เข้าสู่ระบบของร้านเป็นคนละระบบกับ Supabase Auth จึงไม่ได้ให้สิทธิ์ RLS แบบ authenticated โดยอัตโนมัติ
 
 API นี้เป็น CRUD ตาม schema: ค่าราคาและสถานะมาจากข้อมูลที่ส่งมา
-ยังไม่ได้คำนวณราคาอัตโนมัติหรือเชื่อมฟอร์ม frontend ให้เรียก API
+frontend คำนวณราคาแล้วเรียก API ผ่าน `service/` โดยตรง
+อ่านรายละเอียดโครงสร้างและตัวอย่างฟังก์ชันได้ที่ `service/README.md`
 การลบข้อมูลที่ถูกตารางอื่นอ้างอิงจะตอบ 409 ตาม foreign key เดิม ไม่ลบรายการลูกต่อให้
 ถ้า RLS ซ่อนรายการ การแก้ไข/ลบจะตอบ 404 เหมือนกรณีไม่พบรายการ
 POST/PUT/DELETE ใช้ `.select()` เพื่อส่งข้อมูลที่บันทึกกลับ จึงต้องมีสิทธิ์ SELECT ร่วมกับสิทธิ์เขียน

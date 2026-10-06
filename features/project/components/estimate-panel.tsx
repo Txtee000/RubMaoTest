@@ -5,17 +5,48 @@ import { Plus, Trash2, Save, FileText } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/features/shared/ui";
-import { calculatePrice, money } from "../project-utils";
+import { calculatePrice, money, projectPrice } from "../project-utils";
 import type { Material, Project } from "../types";
+
+function DecimalInput({ value, onChange, disabled, label }: {
+  value: number;
+  onChange: (value: number) => void;
+  disabled: boolean;
+  label: string;
+}) {
+  const [text, setText] = useState(value.toFixed(2));
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      aria-label={label}
+      required
+      disabled={disabled}
+      pattern="[0-9]+([.][0-9]{1,2})?"
+      value={text}
+      onChange={(event) => {
+        const next = event.target.value;
+        if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
+        setText(next);
+        onChange(Number(next) || 0);
+      }}
+      onBlur={() => {
+        if (text && Number.isFinite(Number(text))) {
+          setText(Number(text).toFixed(2));
+        }
+      }}
+    />
+  );
+}
 
 export function EstimatePanel({
   project,
   onSave,
 }: {
   project: Project;
-  onSave: (project: Project) => void;
+  onSave: (project: Project) => Promise<boolean>;
 }) {
-  const source = project.quotation ?? project;
+  const source = project;
   const [materials, setMaterials] = useState<Material[]>(source.materials);
   const [labor, setLabor] = useState(source.labor_cost);
   const [percent, setPercent] = useState(source.service_percent);
@@ -23,13 +54,14 @@ export function EstimatePanel({
   const editable =
     project.status === "pending" ||
     (project.status === "estimated" && project.payments.length === 0);
-  const price = calculatePrice(materials, labor, percent);
+  const price = editable ? calculatePrice(materials, labor, percent) : projectPrice(project);
 
   function addMaterial() {
     setMaterials([
       ...materials,
       {
-        id: crypto.randomUUID(),
+        // รหัสชั่วคราวในฟอร์มเท่านั้น; POST ให้ฐานข้อมูลสร้าง ID จริง
+        id: Math.min(0, ...materials.map((item) => item.id)) - 1,
         material_name: "",
         quantity: 1,
         unit: "",
@@ -39,14 +71,18 @@ export function EstimatePanel({
     ]);
     setMessage("");
   }
-  function editMaterial(id: string, field: keyof Material, value: string | number) {
+  function editMaterial(id: number, field: keyof Material, value: string | number) {
     setMaterials(materials.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
     setMessage("");
   }
-  function saveEstimate(event: FormEvent) {
+  async function saveEstimate(event: FormEvent) {
     event.preventDefault();
     if (!materials.length) {
       setMessage("เพิ่มวัสดุอย่างน้อย 1 รายการก่อนยืนยัน");
+      return;
+    }
+    if (materials.some((item) => item.quantity < 0.01 || item.unit_cost < 0)) {
+      setMessage("จำนวนต้องอย่างน้อย 0.01 และราคาต่อหน่วยต้องไม่ติดลบ");
       return;
     }
     if (price.final_cost <= 0) {
@@ -63,23 +99,19 @@ export function EstimatePanel({
       setMessage("กรอกชื่อวัสดุและหน่วยให้ครบ");
       return;
     }
-    onSave({
+    const saved = await onSave({
       ...project,
       materials: cleanMaterials,
       labor_cost: labor,
       service_percent: percent,
-      quotation: {
-        materials: structuredClone(cleanMaterials),
-        labor_cost: labor,
-        service_percent: percent,
-      },
+      base_cost: price.base_cost,
+      final_cost: price.final_cost,
       status: "estimated",
-      history: [
-        ...project.history,
-        { date: new Date().toISOString(), text: "ยืนยันใบเสนอราคา รอลูกค้าพิจารณา" },
-      ],
     });
-    setMessage("บันทึกใบเสนอราคาแล้ว เปิดหน้าบิลเพื่อคัดลอกลิงก์ให้ลูกค้าได้");
+    // service ใส่ ID จริงกลับในรายการที่เพิ่มสำเร็จแล้ว
+    setMaterials(cleanMaterials);
+    if (!saved) { setMessage("บันทึกไม่สำเร็จ ดูรายละเอียดด้านบน"); return; }
+    setMessage("บันทึกการประเมินราคาแล้ว เปิดหน้าบิลเพื่อพิมพ์ใบเสนอราคาได้");
   }
 
   return (
@@ -98,7 +130,7 @@ export function EstimatePanel({
       >
         {!editable && (
           <p className="notice">
-            แสดงใบเสนอราคาที่ตกลงไว้ การบันทึกวัสดุใช้จริงจะไม่เปลี่ยนราคานี้
+            แสดงรายการวัสดุและราคาที่บันทึกไว้
           </p>
         )}
         <div className="table-scroll">
@@ -131,15 +163,11 @@ export function EstimatePanel({
                     
                   </td>
                   <td>
-                    <input
-                      aria-label={`จำนวนวัสดุ ${index + 1}`}
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      required
+                    <DecimalInput
+                      label={`จำนวนวัสดุ ${index + 1}`}
                       disabled={!editable}
                       value={item.quantity}
-                      onChange={(e) => editMaterial(item.id, "quantity", Number(e.target.value))}
+                      onChange={(value) => editMaterial(item.id, "quantity", value)}
           
                     />
                   </td>
@@ -154,15 +182,11 @@ export function EstimatePanel({
                     />
                   </td>
                   <td>
-                    <input
-                      aria-label={`ราคาวัสดุ ${index + 1}`}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      required
+                    <DecimalInput
+                      label={`ราคาวัสดุ ${index + 1}`}
                       disabled={!editable}
                       value={item.unit_cost}
-                      onChange={(e) => editMaterial(item.id, "unit_cost", Number(e.target.value))}
+                      onChange={(value) => editMaterial(item.id, "unit_cost", value)}
                     />
                   </td>
                   <td className="tabular">{money(item.quantity * item.unit_cost)}</td>

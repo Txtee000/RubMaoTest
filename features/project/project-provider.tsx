@@ -1,83 +1,112 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { mockData } from "./mock-data";
-import type { Appointment, DemoData, Project } from "./types";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { getWorkspace, saveProjectDetails, saveProjectAppointment } from "@/service/workspace";
+import type { Appointment, AppData, Project } from "./types";
 
-const STORAGE_KEY = "rubmao-demo-v1";
+const emptyData: AppData = { projects: [], employees: [], appointments: [] };
 type ProjectContextValue = {
-  data: DemoData;
+  data: AppData;
   ready: boolean;
-  storageError: string;
-  updateProject: (project: Project) => void;
-  saveAppointment: (appointment: Appointment) => void;
+  saving: boolean;
+  error: string;
+  loadError: string;
+  reload: () => Promise<void>;
+  updateProject: (project: Project) => Promise<boolean>;
+  saveAppointment: (appointment: Appointment) => Promise<boolean>;
 };
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<DemoData>(mockData);
+  const pathname = usePathname();
+  const [data, setData] = useState<AppData>(emptyData);
   const [ready, setReady] = useState(false);
-  const [storageError, setStorageError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const busy = useRef(false);
+  const loadId = useRef(0);
+
+  async function loadData(signal?: AbortSignal) {
+    if (pathname === "/login") return emptyData;
+    return getWorkspace(signal);
+  }
 
   useEffect(() => {
-    // Read browser storage after mount, keeping the initial server/client render identical.
-    const timer = window.setTimeout(() => {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved) as DemoData;
-          if (
-            !Array.isArray(parsed.projects) ||
-            !Array.isArray(parsed.employees) ||
-            !Array.isArray(parsed.appointments) ||
-            !parsed.projects.every(
-              (p) =>
-                Array.isArray(p.materials) &&
-                Array.isArray(p.payments) &&
-                Array.isArray(p.history) &&
-                Array.isArray(p.employee_ids),
-            )
-          ) {
-            throw new Error("Invalid demo data");
-          }
-          setData(parsed);
-        }
-      } catch {
-        setStorageError("อ่านข้อมูลที่บันทึกไว้ไม่ได้ จึงแสดงข้อมูลตัวอย่างแทน");
-      }
-      setReady(true);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
+    const controller = new AbortController();
+    const id = ++loadId.current;
+    setReady(false);
+    setLoadError("");
+    setError("");
+    loadData(controller.signal)
+      .then((result) => { if (id === loadId.current) setData(result); })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted || id !== loadId.current) return;
+        setData(emptyData);
+        setLoadError(error instanceof Error ? error.message : "โหลดข้อมูลไม่สำเร็จ");
+      })
+      .finally(() => { if (!controller.signal.aborted && id === loadId.current) setReady(true); });
+    return () => controller.abort();
+    // Reload when moving from login, a bill, or another application page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
-  function saveData(next: DemoData) {
-    setData(next);
+  async function reload() {
+    const id = ++loadId.current;
+    setLoadError("");
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      setStorageError("บันทึกในเบราว์เซอร์ไม่ได้ ข้อมูลจะอยู่เฉพาะระหว่างเปิดแอป");
+      const result = await loadData();
+      if (id === loadId.current) { setData(result); setError(""); }
+    } catch (error) {
+      if (id === loadId.current) setLoadError(error instanceof Error ? error.message : "โหลดข้อมูลไม่สำเร็จ");
+    } finally {
+      if (id === loadId.current) setReady(true);
     }
   }
 
-  function updateProject(project: Project) {
-    saveData({
-      ...data,
-      projects: data.projects.map((item) => (item.id === project.id ? project : item)),
-    });
+  async function save(action: () => Promise<void>): Promise<boolean> {
+    if (busy.current) return false;
+    const id = loadId.current;
+    busy.current = true;
+    setSaving(true);
+    setError("");
+    try {
+      await action();
+      const result = await loadData();
+      if (id === loadId.current) setData(result);
+      return true;
+    } catch (error) {
+      // A save can contain several CRUD requests; recover the actual database state.
+      try {
+        const result = await loadData();
+        if (id === loadId.current) setData(result);
+      } catch {
+        if (id === loadId.current) setLoadError("โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณาลองอีกครั้ง");
+      }
+      if (id === loadId.current) setError(error instanceof Error ? error.message : "บันทึกข้อมูลไม่สำเร็จ");
+      return false;
+    } finally {
+      busy.current = false;
+      setSaving(false);
+    }
   }
 
-  function saveAppointment(appointment: Appointment) {
+  async function updateProject(project: Project) {
+    const previous = data.projects.find((item) => item.id === project.id);
+    if (!previous) { setError("ไม่พบงานนี้"); return false; }
+    return save(() => saveProjectDetails(project, previous));
+  }
+
+  async function saveAppointment(appointment: Appointment) {
+    const project = data.projects.find((item) => item.id === appointment.project_id);
+    if (!project) { setError("ไม่พบงานของนัดหมายนี้"); return false; }
     const exists = data.appointments.some((item) => item.id === appointment.id);
-    saveData({
-      ...data,
-      appointments: exists
-        ? data.appointments.map((item) => (item.id === appointment.id ? appointment : item))
-        : [...data.appointments, appointment],
-    });
+    return save(() => saveProjectAppointment(appointment, project, exists));
   }
 
   return (
-    <ProjectContext.Provider value={{ data, ready, storageError, updateProject, saveAppointment }}>
+    <ProjectContext.Provider value={{ data, ready, saving, error, loadError, reload, updateProject, saveAppointment }}>
       {children}
     </ProjectContext.Provider>
   );

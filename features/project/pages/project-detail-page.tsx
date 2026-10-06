@@ -7,7 +7,6 @@ import {
   FileText,
   Phone,
   UserRound,
-  Clock3,
   ClipboardList,
   Package,
   Users,
@@ -16,11 +15,10 @@ import {
   GitBranch,
 } from "lucide-react";
 import { useProjects } from "../project-provider";
-import { calculatePayments, formatDate, money, projectPrice } from "../project-utils";
-import { EmptyState, LoadingState, Section, StatusBadge } from "@/features/shared/ui";
+import { calculatePayments, money, projectPrice } from "../project-utils";
+import { EmptyState, LoadingState, StatusBadge } from "@/features/shared/ui";
 import { EstimatePanel } from "../components/estimate-panel";
 import { MaterialPanel } from "../components/material-panel";
-import { AdditionalMaterialPanel } from "../components/additional-material-panel";
 import { TeamPanel } from "../components/team-panel";
 import { AppointmentPanel } from "../components/appointment-panel";
 import { PaymentPanel } from "../components/payment-panel";
@@ -29,7 +27,7 @@ import { WorkflowPanel } from "../components/workflow-panel";
 const tabs = [
   { id: "workflow", label: "ความคืบหน้า", icon: GitBranch },
   { id: "estimate", label: "ประเมินราคา", icon: ClipboardList },
-  { id: "material", label: "วัสดุ / จัดซื้อ", icon: Package },
+  { id: "material", label: "วัสดุ", icon: Package },
   { id: "team", label: "ทีมงาน", icon: Users },
   { id: "appointment", label: "นัดหมาย", icon: CalendarDays },
   { id: "payment", label: "การเงิน", icon: Wallet },
@@ -42,9 +40,9 @@ export function ProjectDetailPage({
   projectId: string;
   initialTab?: string;
 }) {
-  const { data, ready, updateProject } = useProjects();
+  const { data, ready, saving, updateProject } = useProjects();
   const [tab, setTab] = useState(tabs.some((t) => t.id === initialTab) ? initialTab : "workflow");
-  const project = data.projects.find((p) => p.id === projectId);
+  const project = data.projects.find((p) => p.id === Number(projectId));
   if (!ready) return <LoadingState />;
   if (!project)
     return (
@@ -80,7 +78,7 @@ export function ProjectDetailPage({
             </span>
           </div>
         </div>
-        {project.quotation && (
+        {project.status !== "pending" && (
           <Link className="button-link" href={`/project/${project.id}/bill`}>
             <FileText size={16} />
             ดูใบเสนอราคา
@@ -113,16 +111,7 @@ export function ProjectDetailPage({
               : `ยอดคงเหลือ ฿${money(payments.remaining)}`}
           </small>
         </div>
-        <div>
-          <span>วิธีรับงาน</span>
-          <strong>
-            {project.delivery_type === "pickup"
-              ? "รับที่ร้าน"
-              : project.delivery_type === "installation"
-                ? "ติดตั้งหน้างาน"
-                : "เลือกหลังตรวจที่ร้านผ่าน"}
-          </strong>
-        </div>
+        <div><span>รายการวัสดุ</span><strong>{project.materials.length} รายการ</strong></div>
       </div>
       <div className="detail-tabs" role="tablist" aria-label="รายละเอียดงาน">
         {tabs.map((item) => (
@@ -140,7 +129,7 @@ export function ProjectDetailPage({
           </button>
         ))}
       </div>
-      <div className="detail-panels">
+      <fieldset className="detail-panels border-0 p-0 m-0 min-w-0" disabled={saving}>
         {/* Keep panels mounted while switching tabs so unfinished form edits are preserved. */}
         <div
           role="tabpanel"
@@ -153,19 +142,7 @@ export function ProjectDetailPage({
             onSave={updateProject}
             onSchedule={() => setTab("appointment")}
           />
-          <Section title="ประวัติการทำงาน" action={<Clock3 size={18} className="text-muted" />}>
-            <ol className="history-list">
-              {[...project.history].reverse().map((item, index) => (
-                <li key={`${item.date}-${index}`}>
-                  <span className="history-dot" />
-                  <div>
-                    <p>{item.text}</p>
-                    <small>{formatDate(item.date, true)}</small>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </Section>
+
         </div>
         <div
           role="tabpanel"
@@ -174,7 +151,6 @@ export function ProjectDetailPage({
           hidden={tab !== "estimate"}
         >
           <EstimatePanel project={project} onSave={updateProject} />
-          <AdditionalMaterialPanel project={project} onSave={updateProject} />
         </div>
         <div
           role="tabpanel"
@@ -182,12 +158,7 @@ export function ProjectDetailPage({
           aria-labelledby="tab-material"
           hidden={tab !== "material"}
         >
-          <MaterialPanel
-            key={JSON.stringify([project.quotation?.materials, project.materials.map((m) => [m.id, m.acquired_quantity])])}
-            project={project}
-            onSave={updateProject}
-          />
-          <AdditionalMaterialPanel project={project} onSave={updateProject} />
+          <MaterialPanel project={project} />
         </div>
         <div role="tabpanel" id="panel-team" aria-labelledby="tab-team" hidden={tab !== "team"}>
           <TeamPanel project={project} onSave={updateProject} />
@@ -208,7 +179,7 @@ export function ProjectDetailPage({
         >
           <PaymentPanel project={project} onSave={updateProject} />
         </div>
-      </div>
+      </fieldset>
     </>
   );
 }

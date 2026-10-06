@@ -30,7 +30,7 @@ const navigation = [
 export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { storageError } = useProjects();
+  const { error, loadError, saving, reload } = useProjects();
   if (pathname === "/login" || pathname.endsWith("/bill")) return <>{children}</>;
   const current = navigation.find((item) =>
     item.href === "/" ? pathname === "/" : pathname.startsWith(item.href),
@@ -97,15 +97,17 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           
         </header>
         <main className="page-content">
-          {storageError && (
+          {(error || loadError) && (
             <p className="notice notice-amber" role="alert">
-              {storageError}
+              {loadError || error}
+              <button type="button" onClick={() => void reload()} className="ml-3 underline">โหลดใหม่</button>
             </p>
           )}
-          {children}
+          {saving && <p role="status" className="notice">กำลังบันทึกข้อมูล…</p>}
+          {!loadError && children}
         </main>
         <footer className="app-footer">
-          RubMao · ระบบจัดการงานรับเหมา<span>ข้อมูลตัวอย่างเก็บเฉพาะเบราว์เซอร์นี้</span>
+          RubMao · ระบบจัดการงานรับเหมา
         </footer>
       </div>
     </div>

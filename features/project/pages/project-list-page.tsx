@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Search, SlidersHorizontal, FolderKanban } from "lucide-react";
+import { Search, SlidersHorizontal, FolderKanban, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeading, Section, LoadingState } from "@/features/shared/ui";
 import { useProjects } from "../project-provider";
 import { statusLabels } from "../project-utils";
 import { ProjectTable } from "../components/project-table";
+import { CreateProjectForm } from "../components/create-project-form";
 
 export function ProjectListPage() {
   const { data, ready } = useProjects();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+  const [showCreateForm, setShowCreateForm] = useState(false);
   if (!ready) return <LoadingState />;
   const projects = data.projects.filter(
     (p) =>
@@ -24,12 +27,15 @@ export function ProjectListPage() {
         title="รายการงาน"
         description="รายละเอียดทุกงาน ตั้งแต่ประเมินราคาจนถึงส่งมอบ"
         action={
-          <span className="heading-counter">
-            <FolderKanban size={17} />
-            {data.projects.length} งานทั้งหมด
-          </span>
+          <div className="button-row">
+            <span className="heading-counter"><FolderKanban size={17} />{data.projects.length} งานทั้งหมด</span>
+            <Button onClick={() => setShowCreateForm(true)} disabled={showCreateForm}>
+              <Plus size={17} />สร้างโครงการ
+            </Button>
+          </div>
         }
       />
+      {showCreateForm && <CreateProjectForm onCancel={() => setShowCreateForm(false)} />}
       <Section
         title="งานของร้าน"
         description="เลือกงานเพื่อประเมินราคา วางแผน และติดตามความคืบหน้า"
@@ -63,7 +69,7 @@ export function ProjectListPage() {
         <ProjectTable projects={projects} />
         <div className="table-footer">
           แสดง {projects.length} จาก {data.projects.length} งาน
-          <span>งานใหม่จะมาจากส่วนลูกค้า / LINE OA</span>
+          <span>หัวหน้าสร้างโครงการได้จากปุ่มด้านบน</span>
         </div>
       </Section>
     </>

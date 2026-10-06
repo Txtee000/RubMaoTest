@@ -11,7 +11,7 @@ export function TeamPanel({
   onSave,
 }: {
   project: Project;
-  onSave: (project: Project) => void;
+  onSave: (project: Project) => Promise<boolean>;
 }) {
   const { data } = useProjects();
   const [selected, setSelected] = useState(project.employee_ids);
@@ -56,15 +56,12 @@ export function TeamPanel({
         {canAssign && (
           <Button
             disabled={!selected.length}
-            onClick={() => {
-              onSave({
+            onClick={async () => {
+              const saved = await onSave({
                 ...project,
                 employee_ids: selected,
-                history: [
-                  ...project.history,
-                  { date: new Date().toISOString(), text: "อัปเดตทีมงานที่รับผิดชอบ" },
-                ],
               });
+              if (!saved) { setMessage("บันทึกไม่สำเร็จ ดูรายละเอียดด้านบน"); return; }
               setMessage("บันทึกทีมงานแล้ว");
             }}
           >

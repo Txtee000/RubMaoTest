@@ -9,7 +9,7 @@ import { useProjects } from "@/features/project/project-provider";
 import { appointmentLabels, formatDate } from "@/features/project/project-utils";
 
 export function AppointmentPage() {
-  const { data, ready, saveAppointment } = useProjects();
+  const { data, ready, saving, saveAppointment } = useProjects();
   const [filter, setFilter] = useState("all");
   if (!ready) return <LoadingState />;
   const appointments = data.appointments
@@ -20,7 +20,7 @@ export function AppointmentPage() {
       <PageHeading
         eyebrow="SCHEDULE"
         title="นัดหมาย"
-        description="วางแผนดูหน้างาน ติดตั้ง และรับสินค้าที่ร้าน"
+        description="วางแผนดูหน้างานและรับสินค้าที่ร้าน"
       />
       <Section title="รายการนัดหมาย" description="เพิ่มหรือแก้ไขนัดหมายจากหน้ารายละเอียดงาน">
         <div className="filter-tabs">
@@ -66,6 +66,7 @@ export function AppointmentPage() {
                     </Link>
                     {a.status === "pending" && (
                       <Button
+                        disabled={saving}
                         variant="outline"
                         onClick={() => saveAppointment({ ...a, status: "completed" })}
                       >

@@ -3,7 +3,7 @@ import { SESSION_COOKIE, validSession } from "@/lib/auth";
 
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  if (path === "/api/auth/login" || /^\/project\/[^/]+\/bill\/?$/.test(path)) {
+  if (path === "/api/auth/login") {
     return NextResponse.next();
   }
   const authenticated = validSession(request.cookies.get(SESSION_COOKIE)?.value);

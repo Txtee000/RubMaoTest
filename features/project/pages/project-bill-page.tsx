@@ -4,15 +4,16 @@ import { useState } from "react";
 import { Hammer, Link2, Printer, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProjects } from "../project-provider";
-import { formatDate, money, projectPrice } from "../project-utils";
+import { money, projectPrice } from "../project-utils";
 import { EmptyState, LoadingState } from "@/features/shared/ui";
 
 export function ProjectBillPage({ projectId }: { projectId: string }) {
-  const { data, ready } = useProjects();
+  const { data, ready, loadError, reload } = useProjects();
   const [message, setMessage] = useState("");
-  const project = data.projects.find((p) => p.id === projectId);
+  const project = data.projects.find((p) => p.id === Number(projectId));
   if (!ready) return <LoadingState />;
-  if (!project?.quotation)
+  if (loadError) return <div className="bill-page"><p role="alert">{loadError}</p><Button onClick={() => void reload()}>โหลดใหม่</Button></div>;
+  if (!project || project.status === "pending")
     return (
       <div className="bill-page">
         <EmptyState
@@ -21,11 +22,12 @@ export function ProjectBillPage({ projectId }: { projectId: string }) {
         />
       </div>
     );
-  const quote = project.quotation;
+  const quote = project;
   const price = projectPrice(project);
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const url = new URL(window.location.href);
+      await navigator.clipboard.writeText(url.toString());
       setMessage("คัดลอกลิงก์แล้ว");
     } catch {
       setMessage("คัดลอกอัตโนมัติไม่ได้ กรุณาคัดลอก URL จากแถบที่อยู่");
@@ -73,8 +75,6 @@ export function ProjectBillPage({ projectId }: { projectId: string }) {
             <p>{project.phone_number}</p>
           </div>
           <div>
-            <span>วันที่สร้างงาน</span>
-            <p>{formatDate(project.created_at)}</p>
             <span>งาน</span>
             <p>{project.order_name}</p>
           </div>
@@ -136,17 +136,9 @@ export function ProjectBillPage({ projectId }: { projectId: string }) {
         <div className="bill-note">
           <strong>หมายเหตุ</strong>
           <p>โปรดตรวจสอบรายการและแจ้งผลการพิจารณากับเจ้าของร้านก่อนเริ่มงาน</p>
-          <p>
-            รูปแบบชำระเงิน:{" "}
-            {project.payment_type === "full" ? "ชำระเต็มจำนวน" : "มัดจำและชำระส่วนที่เหลือ"}
-          </p>
         </div>
         <footer className="bill-footer">ขอบคุณที่ไว้วางใจให้เราดูแลงานของคุณ</footer>
       </article>
-      <p className="bill-demo-note">
-        ตัวอย่าง frontend · ใบเสนอราคาที่แก้ไขเก็บเฉพาะเบราว์เซอร์นี้
-        การแชร์ข้อมูลล่าสุดข้ามอุปกรณ์ต้องเชื่อมฐานข้อมูล
-      </p>
     </div>
   );
 }
