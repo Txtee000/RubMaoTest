@@ -8,7 +8,7 @@ import { calculatePayments, money, projectPrice } from "@/features/project/proje
 export function PaymentPage() {
   const { data, ready } = useProjects();
   if (!ready) return <LoadingState />;
-  const projects = data.projects.filter((p) => p.status !== "pending");
+  const projects = data.projects.filter((p) => !["pending", "reject"].includes(p.status));
   return (
     <>
       <PageHeading

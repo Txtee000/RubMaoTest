@@ -3,14 +3,17 @@ import type { Material, Payment, Project, ProjectStatus } from "./types";
 export const statusLabels: Record<ProjectStatus, string> = {
   pending: "รอประเมิน",
   estimated: "รอลูกค้าตกลง",
+  reject: "ลูกค้าปฏิเสธงาน",
   confirmed: "เตรียมงาน / กำลังทำที่ร้าน",
-  waiting_shop_inspection: "รอตรวจที่ร้าน",
+  waiting_shop_inspection: "รอหัวหน้าตรวจงาน",
   shop_passed: "งานที่ร้านผ่านแล้ว",
-  waiting_site_inspection: "รอตรวจหน้างาน",
+  waiting_site_inspection: "รอหัวหน้าตรวจหน้างาน",
   site_passed: "หน้างานผ่านแล้ว",
-  delivered: "ส่งมอบแล้ว",
+  delivered_shop: "ส่งมอบงานที่ร้านแล้ว",
+  delivered_site: "ส่งมอบงานหน้างานแล้ว",
   accepted: "ลูกค้าตรวจรับแล้ว",
-  revision: "รอแก้ไข",
+  revision_shop: "รอแก้ไขงานที่ร้าน",
+  revision_site: "รอแก้ไขหน้างาน",
   completed: "ปิดงานแล้ว",
 };
 
@@ -85,17 +88,20 @@ export function canChangeStatus(
   next: ProjectStatus,
   remaining = 0,
 ) {
+  if (next === "reject") return current === "estimated";
   if (next === "completed") return current === "accepted" && remaining === 0;
   const allowed: Partial<Record<ProjectStatus, ProjectStatus[]>> = {
     pending: ["estimated"],
     estimated: ["confirmed"],
     confirmed: ["waiting_shop_inspection"],
-    shop_passed: ["delivered", "waiting_site_inspection"],
-    waiting_shop_inspection: ["shop_passed", "revision"],
-    waiting_site_inspection: ["site_passed", "revision"],
-    site_passed: ["delivered"],
-    delivered: ["accepted", "revision"],
-    revision: ["waiting_shop_inspection", "waiting_site_inspection"],
+    shop_passed: ["delivered_shop", "waiting_site_inspection"],
+    waiting_shop_inspection: ["shop_passed", "revision_shop"],
+    waiting_site_inspection: ["site_passed", "revision_site"],
+    site_passed: ["delivered_site"],
+    delivered_shop: ["accepted", "revision_shop"],
+    delivered_site: ["accepted", "revision_site"],
+    revision_shop: ["waiting_shop_inspection"],
+    revision_site: ["waiting_site_inspection"],
   };
   return allowed[current]?.includes(next) ?? false;
 }

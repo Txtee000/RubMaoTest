@@ -1,14 +1,17 @@
 export type ProjectStatus =
   | "pending"
   | "estimated"
+  | "reject"
   | "confirmed"
   | "waiting_shop_inspection"
   | "shop_passed"
   | "waiting_site_inspection"
   | "site_passed"
-  | "delivered"
+  | "delivered_shop"
+  | "delivered_site"
   | "accepted"
-  | "revision"
+  | "revision_shop"
+  | "revision_site"
   | "completed";
 
 export type Material = {

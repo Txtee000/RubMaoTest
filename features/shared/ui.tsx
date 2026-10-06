@@ -6,7 +6,7 @@ export function StatusBadge({ status }: { status: ProjectStatus }) {
   const color =
     status === "completed" || status.endsWith("passed") || status === "accepted"
       ? "green"
-      : status === "revision"
+      : status.startsWith("revision") || status === "reject"
         ? "red"
         : status === "pending" || status === "estimated"
           ? "amber"

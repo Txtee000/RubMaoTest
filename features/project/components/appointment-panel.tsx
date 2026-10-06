@@ -70,7 +70,7 @@ export function AppointmentPanel({ project }: { project: Project }) {
                 <strong>{formatDate(a.appointment_datetime, true)}</strong>
                 <p className="text-muted">{a.location}</p>
                 <small>{a.status === "completed" ? "ดำเนินการแล้ว" : "รอดำเนินการ"}</small>
-                {a.status === "pending" && project.status !== "completed" && (
+                {a.status === "pending" && !["completed", "reject"].includes(project.status) && (
                   <div className="button-row ml-auto">
                   <Button
                     type="button"
@@ -104,7 +104,7 @@ export function AppointmentPanel({ project }: { project: Project }) {
           )}
         </div>
       </Section>
-      {project.status !== "completed" && (
+      {!["completed", "reject"].includes(project.status) && (
         <Section
           title={editingId ? "แก้ไขนัดหมาย" : "เพิ่มนัดหมาย"}
           description="หัวหน้าเลือกประเภทนัด วันเวลา และสถานที่ได้เอง"

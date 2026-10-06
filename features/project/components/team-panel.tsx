@@ -16,7 +16,7 @@ export function TeamPanel({
   const { data } = useProjects();
   const [selected, setSelected] = useState(project.employee_ids);
   const [message, setMessage] = useState("");
-  const canAssign = !["pending", "estimated", "completed"].includes(project.status);
+  const canAssign = !["pending", "estimated", "completed", "reject"].includes(project.status);
   return (
     <Section
       title="เลือกทีมที่รับผิดชอบ"

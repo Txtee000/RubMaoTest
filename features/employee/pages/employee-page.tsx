@@ -18,7 +18,7 @@ export function EmployeePage() {
       <div className="employee-grid">
         {data.employees.map((employee) => {
           const tasks = data.projects.filter(
-            (p) => p.employee_ids.includes(employee.id) && p.status !== "completed",
+            (p) => p.employee_ids.includes(employee.id) && !["completed", "reject"].includes(p.status),
           );
           return (
             <section key={employee.id} className="employee-card">

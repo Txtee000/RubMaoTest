@@ -64,7 +64,7 @@ export function AppointmentPage() {
                     <Link href={`/project/${a.project_id}`} className="text-link">
                       เปิดงาน <ArrowUpRight size={16} />
                     </Link>
-                    {a.status === "pending" && (
+                    {a.status === "pending" && p?.status !== "reject" && (
                       <Button
                         disabled={saving}
                         variant="outline"

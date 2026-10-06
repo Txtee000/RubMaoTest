@@ -240,6 +240,7 @@ export function EstimatePanel({
                 required
                 disabled={!editable}
                 value={labor}
+                className="plain-number-input"
                 onChange={(e) => setLabor(Number(e.target.value))}
               />
             </label>
@@ -252,6 +253,7 @@ export function EstimatePanel({
                 required
                 disabled={!editable}
                 value={percent}
+                className="plain-number-input"
                 onChange={(e) => setPercent(Number(e.target.value))}
               />
             </label>

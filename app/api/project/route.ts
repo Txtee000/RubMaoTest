@@ -107,14 +107,18 @@ export async function PUT(request: Request) {
     const message = validatePayload(updates, true);
     if (message) return NextResponse.json({ error: message }, { status: 400 });
 
-    const { data, error } = await supabase
-      .from("project")
-      .update(updates)
-      .eq("project_id", id)
+    let query = supabase.from("project").update(updates).eq("project_id", id);
+    if (updates.status === "reject") {
+      query = query.eq("status", "estimated");
+    }
+    const { data, error } = await query
       .select("project_id, customer_id, description_project, status, base_cost, labor_cost, service_percent, final_cost, order_name")
       .maybeSingle();
 
     if (error) return databaseError(error, "แก้ไขข้อมูล");
+    if (!data && updates.status === "reject") {
+      return NextResponse.json({ error: "ยกเลิกงานได้เฉพาะสถานะรอลูกค้าตกลง" }, { status: 409 });
+    }
     if (!data) return NextResponse.json({ error: "ไม่พบรายการ หรือไม่มีสิทธิ์แก้ไข" }, { status: 404 });
     return NextResponse.json({ project: data });
   } catch (error) {

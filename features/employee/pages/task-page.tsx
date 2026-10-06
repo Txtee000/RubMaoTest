@@ -13,7 +13,7 @@ export function TaskPage() {
   const tasks = data.projects.filter(
     (p) =>
       p.employee_ids.length &&
-      p.status !== "completed" &&
+      !["completed", "reject"].includes(p.status) &&
       (employeeId === "all" || p.employee_ids.includes(Number(employeeId))),
   );
   return (

@@ -30,16 +30,16 @@ export function DashboardPage() {
   const { data, ready } = useProjects();
 
   if (!ready) return <LoadingState />;
-  const active = data.projects.filter((p) => p.status !== "completed");
+  const active = data.projects.filter((p) => !["completed", "reject"].includes(p.status));
   const awaiting = data.projects.filter((p) => p.status === "pending" || p.status === "estimated");
   const due = data.projects
-    .filter((p) => p.status !== "pending")
+    .filter((p) => !["pending", "reject"].includes(p.status))
     .reduce(
       (sum, p) => sum + calculatePayments(projectPrice(p).final_cost, p.payments).remaining,
       0,
     );
   const appointments = data.appointments
-    .filter((a) => a.status === "pending")
+    .filter((a) => a.status === "pending" && data.projects.some((p) => p.id === a.project_id && p.status !== "reject"))
     .sort((a, b) => a.appointment_datetime.localeCompare(b.appointment_datetime))
     .slice(0, 3);
   const stats = [

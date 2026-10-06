@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -78,12 +79,23 @@ export function ProjectDetailPage({
             </span>
           </div>
         </div>
+        <div className="button-row">
+        {project.status === "estimated" && (
+          <Button
+            variant="destructive"
+            disabled={saving}
+            onClick={() => void updateProject({ ...project, status: "reject" })}
+          >
+            ยกเลิกงาน
+          </Button>
+        )}
         {project.status !== "pending" && (
           <Link className="button-link" href={`/project/${project.id}/bill`}>
             <FileText size={16} />
             ดูใบเสนอราคา
           </Link>
         )}
+        </div>
       </div>
       <div className="project-overview">
         <div>
@@ -141,6 +153,10 @@ export function ProjectDetailPage({
             project={project}
             onSave={updateProject}
             onSchedule={() => setTab("appointment")}
+            onEstimate={() => setTab("estimate")}
+            onTeam={() => setTab("team")}
+            onMaterial={() => setTab("material")}
+            onPayment={() => setTab("payment")}
           />
 
         </div>
@@ -150,7 +166,14 @@ export function ProjectDetailPage({
           aria-labelledby="tab-estimate"
           hidden={tab !== "estimate"}
         >
-          <EstimatePanel project={project} onSave={updateProject} />
+          <EstimatePanel
+            project={project}
+            onSave={async (updatedProject) => {
+              const saved = await updateProject(updatedProject);
+              if (saved) setTab("workflow");
+              return saved;
+            }}
+          />
         </div>
         <div
           role="tabpanel"
@@ -161,7 +184,14 @@ export function ProjectDetailPage({
           <MaterialPanel project={project} />
         </div>
         <div role="tabpanel" id="panel-team" aria-labelledby="tab-team" hidden={tab !== "team"}>
-          <TeamPanel project={project} onSave={updateProject} />
+          <TeamPanel
+            project={project}
+            onSave={async (updatedProject) => {
+              const saved = await updateProject(updatedProject);
+              if (saved) setTab("workflow");
+              return saved;
+            }}
+          />
         </div>
         <div
           role="tabpanel"

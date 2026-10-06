@@ -22,7 +22,7 @@ export function PaymentPanel({
   const [message, setMessage] = useState("");
   const price = projectPrice(project);
   const payment = calculatePayments(price.final_cost, project.payments);
-  const canReceive = !["pending", "estimated", "completed"].includes(project.status);
+  const canReceive = !["pending", "estimated", "completed", "reject"].includes(project.status);
 
   async function savePayment(event: FormEvent) {
     event.preventDefault();

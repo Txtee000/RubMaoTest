@@ -836,6 +836,15 @@ textarea:focus {
   outline: 2px solid #bad5ff;
   border-color: #7cadf4;
 }
+.plain-number-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.plain-number-input::-webkit-inner-spin-button,
+.plain-number-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 input:disabled,
 select:disabled {
   background: #fafbfd !important;
