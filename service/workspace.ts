@@ -33,7 +33,7 @@ export async function getWorkspace(signal?: AbortSignal): Promise<AppData> {
         })),
         payments: payments.filter((p) => p.project_id === project.project_id).map((p) => ({
           id: p.payment_id, amount: Number(p.amount), payment_date: p.payment_date ? bangkokTime(p.payment_date) : "",
-          proof_of_payment: p.proof_of_payment ?? "", status: p.status as "pending" | "paid",
+          proof_of_payment: p.proof_of_payment ?? "",
         })),
         employee_ids: assignments.filter((a) => a.project_id === project.project_id).map((a) => a.employee_id),
       };
@@ -79,7 +79,7 @@ export async function saveProjectDetails(project: Project, previous: Project): P
       project_id: project.id, amount: payment.amount,
       // วันที่จากช่อง date หมายถึงเที่ยงคืนประเทศไทย
       payment_date: payment.payment_date.length === 10 ? `${payment.payment_date}T00:00:00` : localTime(payment.payment_date) || null,
-      proof_of_payment: payment.proof_of_payment || null, status: payment.status,
+      proof_of_payment: payment.proof_of_payment || null,
     };
     if (old) await updatePayment(payment.id, row);
     else {

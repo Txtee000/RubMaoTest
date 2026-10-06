@@ -57,6 +57,5 @@ export interface Payment {
   project_id: number;
   proof_of_payment: string | null;
   payment_date: string | null;
-  status: string;
   amount: number;
 }

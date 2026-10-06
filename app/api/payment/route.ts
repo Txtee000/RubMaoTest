@@ -16,8 +16,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "project_id ต้องเป็นจำนวนเต็ม" }, { status: 400 });
     }
     if (project_id) query = query.eq("project_id", project_id);
-    const status = searchParams.get("status");
-    if (status) query = query.eq("status", status);
 
     const { data, error } = await query;
     if (error) return databaseError(error, "โหลดข้อมูล");
@@ -46,7 +44,6 @@ export async function POST(request: Request) {
       project_id: body.project_id,
       proof_of_payment: body.proof_of_payment ?? null,
       payment_date: body.payment_date ?? null,
-      status: body.status,
       amount: body.amount,
     };
     const message = validatePayload(payload);
@@ -86,7 +83,7 @@ export async function PUT(request: Request) {
     }
 
     // รับเฉพาะคอลัมน์ที่แก้ไขได้ใน schema
-    const fields = ["project_id","proof_of_payment","payment_date","status","amount"];
+    const fields = ["project_id","proof_of_payment","payment_date","amount"];
     const updates: Record<string, unknown> = {};
     for (const field of fields) {
       if (Object.prototype.hasOwnProperty.call(body, field)) updates[field] = body[field];
@@ -146,7 +143,7 @@ export async function DELETE(request: Request) {
 // ตรวจข้อมูลก่อนส่งไป Supabase; partial ใช้เมื่อแก้ไขบางช่อง
 function validatePayload(payload: Record<string, unknown>, partial = false): string | null {
   if (!partial) {
-    const required = ["project_id","status","amount"];
+    const required = ["project_id","amount"];
     for (const field of required) {
       if (payload[field] === undefined || payload[field] === null) return `กรุณาระบุ ${field}`;
     }
@@ -163,9 +160,6 @@ function validatePayload(payload: Record<string, unknown>, partial = false): str
   }
   if (payload.payment_date !== undefined && payload.payment_date !== null) {
     if (typeof payload.payment_date !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T|$)/.test(payload.payment_date) || !Number.isFinite(Date.parse(payload.payment_date))) return "payment_date ต้องเป็นวันที่แบบ ISO 8601";
-  }
-  if (payload.status !== undefined) {
-    if (typeof payload.status !== "string" || payload.status.length > 50 || !payload.status.trim()) return "status ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 50 ตัวอักษร";
   }
   if (payload.amount !== undefined) {
     if (typeof payload.amount !== "number" || !Number.isFinite(payload.amount) || payload.amount < 0) return "amount ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป";

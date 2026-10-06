@@ -72,10 +72,10 @@ export function projectPrice(project: Project) {
 
 export function calculatePayments(
   final_cost: number,
-  payments: Pick<Payment, "amount" | "status">[],
+  payments: Pick<Payment, "amount">[],
 ) {
   const paid_total = round(
-    payments.filter((item) => item.status === "paid").reduce((sum, item) => sum + item.amount, 0),
+    payments.reduce((sum, item) => sum + item.amount, 0),
   );
   const remaining = Math.max(0, round(final_cost - paid_total));
   const label = paid_total === 0 ? "ยังไม่ชำระ" : remaining > 0 ? "ชำระบางส่วน" : "ชำระครบ";

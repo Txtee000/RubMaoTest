@@ -90,6 +90,7 @@ export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam,
               {status === "delivered_site" && <MapPin size={16} aria-hidden="true" />}
               {status === "delivered_shop" ? "ส่งมอบงานที่ร้าน"
                 : status === "delivered_site" ? "ส่งมอบงานหน้างาน"
+                : status === "completed" ? "ยืนยันปิด Project"
                 : statusLabels[status]}
             </Button>
           ))}

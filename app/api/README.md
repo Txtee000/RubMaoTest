@@ -11,7 +11,7 @@ CRUD อยู่ใน `route.ts` ของแต่ละตารางโด
 | `/api/work_on` | work_on | employee_id + project_id | employee_id, project_id |
 | `/api/appointment` | appointment | appointment_id | project_id, customer_id, status, appointment_type |
 | `/api/job_material` | job_material | job_material_id | project_id |
-| `/api/payment` | payment | payment_id | project_id, status |
+| `/api/payment` | payment | payment_id | project_id |
 
 ## รูปแบบการเรียก
 
@@ -110,7 +110,7 @@ if (!deleteResponse.ok) throw new Error(deleteResult.error);
 
 // payment
 {
-  "project_id": 1, "amount": 1000, "status": "paid",
+  "project_id": 1, "amount": 1000,
   "payment_date": "2026-10-06T09:00:00+07:00", "proof_of_payment": null
 }
 ```

@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/features/shared/ui";
 import { calculatePayments, formatDate, money, projectPrice } from "../project-utils";
-import type { Payment, Project } from "../types";
+import type { Project } from "../types";
 
 export function PaymentPanel({
   project,
@@ -18,7 +18,6 @@ export function PaymentPanel({
     new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date()),
   );
   const [proof, setProof] = useState("");
-  const [status, setStatus] = useState<Payment["status"]>("paid");
   const [message, setMessage] = useState("");
   const price = projectPrice(project);
   const payment = calculatePayments(price.final_cost, project.payments);
@@ -40,7 +39,6 @@ export function PaymentPanel({
           amount: value,
           payment_date: date,
           proof_of_payment: proof.trim(),
-          status,
         },
       ],
     });
@@ -48,18 +46,6 @@ export function PaymentPanel({
     setAmount("");
     setProof("");
     setMessage("บันทึกรายการชำระเงินแล้ว");
-  }
-  async function confirmPayment(item: Payment) {
-    if (item.amount > payment.remaining) {
-      setMessage("รายการนี้เกินยอดคงเหลือ กรุณาตรวจสอบจำนวนเงิน");
-      return;
-    }
-    const saved = await onSave({
-      ...project,
-      payments: project.payments.map((p) => (p.id === item.id ? { ...p, status: "paid" } : p)),
-    });
-    if (!saved) { setMessage("บันทึกไม่สำเร็จ ดูรายละเอียดด้านบน"); return; }
-    setMessage("ยืนยันรับเงินแล้ว");
   }
   return (
     <>
@@ -85,8 +71,6 @@ export function PaymentPanel({
                 <th>วันที่</th>
                 <th>จำนวนเงิน</th>
                 <th>หลักฐาน / หมายเหตุ</th>
-                <th>สถานะ</th>
-                <th />
               </tr>
             </thead>
             <tbody>
@@ -95,18 +79,6 @@ export function PaymentPanel({
                   <td>{item.payment_date ? formatDate(item.payment_date) : "—"}</td>
                   <td>฿{money(item.amount)}</td>
                   <td className="proof-cell">{item.proof_of_payment || "—"}</td>
-                  <td>
-                    <span className={`badge badge-${item.status === "paid" ? "green" : "amber"}`}>
-                      {item.status === "paid" ? "ยืนยันแล้ว" : "รอตรวจสอบ"}
-                    </span>
-                  </td>
-                  <td>
-                    {item.status === "pending" && canReceive && (
-                      <Button variant="outline" onClick={() => confirmPayment(item)}>
-                        ยืนยันรับเงิน
-                      </Button>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -117,7 +89,7 @@ export function PaymentPanel({
         )}
       </Section>
       {canReceive && payment.remaining > 0 && (
-        <Section title="บันทึกการรับเงิน" description="รายการรอตรวจสอบจะยังไม่นับเป็นยอดรับเงิน">
+        <Section title="บันทึกการรับเงิน" description="บันทึกยอดที่หัวหน้าได้รับเงินจริง">
           <form onSubmit={savePayment}>
             <div className="form-grid">
               <label>
@@ -149,16 +121,6 @@ export function PaymentPanel({
                   value={proof}
                   onChange={(e) => setProof(e.target.value)}
                 />
-              </label>
-              <label>
-                ผลการตรวจสอบ
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as Payment["status"])}
-                >
-                  <option value="paid">ตรวจสอบแล้ว / รับเงินแล้ว</option>
-                  <option value="pending">รอตรวจสอบหลักฐาน</option>
-                </select>
               </label>
             </div>
             <div className="form-actions">

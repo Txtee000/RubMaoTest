@@ -28,7 +28,6 @@ export type Payment = {
   amount: number;
   payment_date: string;
   proof_of_payment: string;
-  status: "pending" | "paid";
 };
 
 export type Appointment = {

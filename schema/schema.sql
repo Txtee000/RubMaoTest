@@ -68,7 +68,6 @@ CREATE TABLE payment (
   project_id BIGINT NOT NULL,
   proof_of_payment TEXT,
   payment_date TIMESTAMP,
-  status VARCHAR(50) NOT NULL,
   amount DECIMAL(14, 2) NOT NULL CHECK (amount >= 0),
   FOREIGN KEY (project_id) REFERENCES project(project_id)
 );
