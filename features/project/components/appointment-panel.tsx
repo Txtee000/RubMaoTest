@@ -8,11 +8,11 @@ import { appointmentLabels, formatDate } from "../project-utils";
 import { useProjects } from "../project-provider";
 import type { Appointment, Project } from "../types";
 
-export function AppointmentPanel({ project }: { project: Project }) {
+export function AppointmentPanel({ project, initialType = "site_visit" }: { project: Project; initialType?: Appointment["appointment_type"] }) {
   const { data, saveAppointment } = useProjects();
   const appointments = data.appointments.filter((a) => a.project_id === project.id);
   const [editingId, setEditingId] = useState(0);
-  const [type, setType] = useState<Appointment["appointment_type"]>("site_visit");
+  const [type, setType] = useState<Appointment["appointment_type"]>(initialType);
   const [date, setDate] = useState("");
   const [hour, setHour] = useState("");
   const [minute, setMinute] = useState("00");
@@ -192,7 +192,7 @@ export function AppointmentPanel({ project }: { project: Project }) {
                 {message}
               </p>
               <div className="button-row">
-                {editingId && (
+                {editingId > 0 && (
                   <Button
                     type="button"
                     variant="outline"

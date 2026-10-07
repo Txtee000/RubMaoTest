@@ -33,7 +33,7 @@ export type Payment = {
 export type Appointment = {
   id: number;
   project_id: number;
-  appointment_type: "site_visit" | "pickup";
+  appointment_type: "installation" | "pickup" | "site_visit";
   appointment_datetime: string;
   location: string;
   status: "pending" | "completed";

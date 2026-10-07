@@ -41,7 +41,7 @@ CREATE TABLE appointment (
   project_id BIGINT NOT NULL,
   customer_id BIGINT NOT NULL,
   appointment_type VARCHAR(30) NOT NULL
-    CHECK (appointment_type IN ('site_visit', 'pickup')),
+    CHECK (appointment_type IN ('installation', 'pickup', 'site_visit')),
   location TEXT NOT NULL,
   appointment_datetime TIMESTAMP NOT NULL,
   status VARCHAR(50) NOT NULL,

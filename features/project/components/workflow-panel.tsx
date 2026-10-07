@@ -5,19 +5,29 @@ import { CalendarDays, ArrowUpRight, CircleX, ArrowLeft, Store, MapPin } from "l
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/features/shared/ui";
-import { calculatePayments, canChangeStatus, statusLabels } from "../project-utils";
-import type { Project, ProjectStatus } from "../types";
+import { appointmentLabels, calculatePayments, canChangeStatus, formatDate, statusLabels } from "../project-utils";
+import { useProjects } from "../project-provider";
+import type { Appointment, Project, ProjectStatus } from "../types";
 
 export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam, onMaterial, onPayment }: {
   project: Project;
   onSave: (project: Project) => Promise<boolean>;
-  onSchedule: () => void;
+  onSchedule: (type?: Appointment["appointment_type"]) => void;
   onEstimate: () => void;
   onTeam: () => void;
   onMaterial: () => void;
   onPayment: () => void;
 }) {
   const [message, setMessage] = useState("");
+  const { data } = useProjects();
+  const isCustomerInspection = project.status === "site_passed";
+  const suggestedTypes: Appointment["appointment_type"][] = project.status === "pending" || isCustomerInspection
+    ? ["site_visit"]
+    : project.status === "shop_passed" ? ["installation", "pickup"] : [];
+  const scheduled = data.appointments
+    .filter((appointment) => appointment.project_id === project.id && suggestedTypes.includes(appointment.appointment_type))
+    .filter((appointment) => !isCustomerInspection || (appointment.status === "pending" && new Date(appointment.appointment_datetime).getTime() >= Date.now()))
+    .sort((a, b) => b.appointment_datetime.localeCompare(a.appointment_datetime))[0];
   const payments = calculatePayments(project.final_cost, project.payments);
   const nextStatuses = (Object.keys(statusLabels) as ProjectStatus[])
     .filter((status) => status !== "reject" && canChangeStatus(project.status, status, payments.remaining));
@@ -28,7 +38,7 @@ export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam,
       return;
     }
     if (["waiting_shop_inspection", "waiting_site_inspection"].includes(status) && !project.employee_ids.length) {
-      setMessage("เลือกทีมที่รับผิดชอบก่อนส่งตรวจ");
+      setMessage("เลือกพนักงานที่รับผิดชอบก่อนส่งตรวจ");
       return;
     }
     const saved = await onSave({ ...project, status });
@@ -68,6 +78,30 @@ export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam,
   return (
     <Section title="สถานะงาน" description="อัปเดตขั้นตอนการทำงาน">
       <h3 className="pl-6 pb-2">{statusLabels[project.status]}</h3>
+      {suggestedTypes.length > 0 && (
+        <div key={`${project.id}-${project.status}-${scheduled?.id ?? "missing"}`} className={`schedule-reminder mx-6 mb-4 ${scheduled ? "schedule-reminder-saved" : ""}`} role="status">
+          <div className="schedule-reminder-icon"><CalendarDays size={24} aria-hidden="true" /></div>
+          <div className="min-w-0 flex-1">
+            <span className="text-xs font-semibold">{scheduled ? "มีนัดหมายแล้ว" : "หัวหน้า · วางแผนนัดหมาย"}</span>
+            <h4 className="mt-1 font-semibold">{scheduled
+              ? `${isCustomerInspection ? "ลูกค้าเข้าตรวจรับงาน" : appointmentLabels[scheduled.appointment_type]} · ${formatDate(scheduled.appointment_datetime, true)}`
+              : isCustomerInspection ? "งานหน้างานเสร็จแล้ว อย่าลืมนัดลูกค้าตรวจรับ"
+              : project.status === "pending" ? "อย่าลืมนัดดูหน้างานก่อนประเมิน"
+              : "งานผ่านแล้ว อย่าลืมนัดติดตั้งหรือรับที่ร้าน"}</h4>
+            <p className="mt-1 text-sm">{scheduled
+              ? `${scheduled.location} · ${scheduled.status === "completed" ? "ดำเนินการแล้ว" : "รอดำเนินการ"}`
+              : isCustomerInspection ? "แจ้งลูกค้าว่างานเสร็จแล้ว และตกลงวันเวลาที่ลูกค้าสะดวกเข้าดูงานก่อนส่งมอบ"
+              : project.status === "pending" ? "หากต้องสำรวจพื้นที่ ให้กำหนดวันเวลากับลูกค้าก่อนประเมินราคา"
+              : "เลือกวิธีส่งมอบและกำหนดวันเวลากับลูกค้า เพื่อให้ทีมเตรียมงานได้ทัน"}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {scheduled ? <Button type="button" variant="outline" onClick={() => onSchedule()}>ดูนัดหมาย <ArrowUpRight size={16} aria-hidden="true" /></Button>
+                : suggestedTypes.map((type) => <Button key={type} type="button" variant={type === "pickup" ? "outline" : "default"} onClick={() => onSchedule(type)}>
+                  {isCustomerInspection ? "นัดลูกค้าตรวจรับงาน" : type === "installation" ? "นัดติดตั้งหน้างาน" : type === "pickup" ? "นัดรับที่ร้าน" : "นัดดูหน้างาน"}<ArrowUpRight size={16} aria-hidden="true" />
+                </Button>)}
+            </div>
+          </div>
+        </div>
+      )}
       {(project.status === "delivered_shop" || project.status === "delivered_site") && (
         <div className="mx-6 mb-4 flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-sm text-slate-500">
           {project.status === "delivered_shop"
@@ -117,7 +151,7 @@ export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam,
         <div className="mx-6 mt-3 mb-4 border-t border-slate-100 pt-3">
           <button
             type="button"
-            onClick={onSchedule}
+            onClick={() => onSchedule()}
             className="group inline-flex items-center gap-2 rounded-sm py-1 text-sm font-medium text-slate-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-4 disabled:opacity-50"
           >
             <CalendarDays size={16} aria-hidden="true" />

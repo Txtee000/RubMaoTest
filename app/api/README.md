@@ -116,7 +116,7 @@ if (!deleteResponse.ok) throw new Error(deleteResult.error);
 ```
 
 บล็อกด้านบนแยกตัวอย่างด้วย comment; JSON ที่ส่งจริงต้องไม่มี comment
-appointment_type ใช้ `site_visit` หรือ `pickup` ตาม schema เดิม
+appointment_type ใช้ `installation`, `pickup` หรือ `site_visit`
 reminder_status เป็น `pending` โดยค่าเริ่มต้น และแก้เป็น `send` หรือ `failed` ได้
 
 ## การตั้งค่าและข้อจำกัด

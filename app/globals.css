@@ -1815,3 +1815,44 @@ textarea {
     break-inside: avoid;
   }
 }
+.schedule-reminder {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #fed7aa;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff7ed, #fffbeb);
+  color: #92400e;
+  box-shadow: 0 6px 18px -10px #d9770640;
+}
+.schedule-reminder-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #ffedd5;
+  box-shadow: 0 4px 8px -4px #d9770640;
+  animation: schedule-reminder-lift 1.6s ease-in-out 3;
+}
+.schedule-reminder-saved {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+  box-shadow: none;
+}
+.schedule-reminder-saved .schedule-reminder-icon {
+  background: #dcfce7;
+  box-shadow: none;
+  animation: none;
+}
+@keyframes schedule-reminder-lift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); box-shadow: 0 8px 12px -4px #d9770640; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .schedule-reminder-icon { animation: none; }
+}

@@ -34,7 +34,7 @@ export interface Appointment {
   appointment_id: number;
   project_id: number;
   customer_id: number;
-  appointment_type: "site_visit" | "pickup";
+  appointment_type: "installation" | "pickup" | "site_visit";
   location: string;
   appointment_datetime: string;
   status: string;

@@ -20,7 +20,7 @@ export function AppointmentPage() {
       <PageHeading
         eyebrow="SCHEDULE"
         title="นัดหมาย"
-        description="วางแผนดูหน้างานและรับสินค้าที่ร้าน"
+        description="วางแผนติดตั้งหน้างาน รับสินค้าที่ร้าน และดูหน้างาน"
       />
       <Section title="รายการนัดหมาย" description="เพิ่มหรือแก้ไขนัดหมายจากหน้ารายละเอียดงาน">
         <div className="filter-tabs">

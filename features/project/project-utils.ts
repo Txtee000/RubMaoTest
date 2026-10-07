@@ -1,4 +1,4 @@
-import type { Material, Payment, Project, ProjectStatus } from "./types";
+import type { Appointment, Material, Payment, Project, ProjectStatus } from "./types";
 
 export const statusLabels: Record<ProjectStatus, string> = {
   pending: "รอประเมิน",
@@ -17,9 +17,10 @@ export const statusLabels: Record<ProjectStatus, string> = {
   completed: "ปิดงานแล้ว",
 };
 
-export const appointmentLabels = {
-  site_visit: "ดูหน้างาน",
+export const appointmentLabels: Record<Appointment["appointment_type"], string> = {
+  installation: "ติดตั้งหน้างาน",
   pickup: "รับที่ร้าน",
+  site_visit: "ดูหน้างาน",
 };
 
 export function money(amount: number) {

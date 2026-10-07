@@ -24,6 +24,7 @@ import { TeamPanel } from "../components/team-panel";
 import { AppointmentPanel } from "../components/appointment-panel";
 import { PaymentPanel } from "../components/payment-panel";
 import { WorkflowPanel } from "../components/workflow-panel";
+import type { Appointment } from "../types";
 
 const tabs = [
   { id: "workflow", label: "ความคืบหน้า", icon: GitBranch },
@@ -43,6 +44,7 @@ export function ProjectDetailPage({
 }) {
   const { data, ready, saving, updateProject } = useProjects();
   const [tab, setTab] = useState(tabs.some((t) => t.id === initialTab) ? initialTab : "workflow");
+  const [scheduleRequest, setScheduleRequest] = useState<{ type: Appointment["appointment_type"]; version: number }>({ type: "site_visit", version: 0 });
   const project = data.projects.find((p) => p.id === Number(projectId));
   if (!ready) return <LoadingState />;
   if (!project)
@@ -59,9 +61,9 @@ export function ProjectDetailPage({
   const payments = calculatePayments(price.final_cost, project.payments);
   return (
     <>
-      <Link className="back-link" href="/project">
-        <ArrowLeft size={16} />
-        รายการงาน
+      <Link className="group back-link hover:text-gray-500" href="/project">
+        <ArrowLeft size={16} className="group-hover:text-gray-500"/>
+        <div className=" group-hover:text-gray-500">รายการงาน</div>
       </Link>
       <div className="detail-heading">
         <div>
@@ -152,7 +154,10 @@ export function ProjectDetailPage({
           <WorkflowPanel
             project={project}
             onSave={updateProject}
-            onSchedule={() => setTab("appointment")}
+            onSchedule={(type) => {
+              if (type) setScheduleRequest((previous) => ({ type, version: previous.version + 1 }));
+              setTab("appointment");
+            }}
             onEstimate={() => setTab("estimate")}
             onTeam={() => setTab("team")}
             onMaterial={() => setTab("material")}
@@ -199,7 +204,7 @@ export function ProjectDetailPage({
           aria-labelledby="tab-appointment"
           hidden={tab !== "appointment"}
         >
-          <AppointmentPanel project={project} />
+          <AppointmentPanel key={`${project.id}-${scheduleRequest.version}`} project={project} initialType={scheduleRequest.type} />
         </div>
         <div
           role="tabpanel"

@@ -176,7 +176,7 @@ function validatePayload(payload: Record<string, unknown>, partial = false): str
     }
   }
   if (payload.appointment_type !== undefined) {
-    if (typeof payload.appointment_type !== "string" || !["site_visit", "pickup"].includes(payload.appointment_type)) return "appointment_type ต้องเป็น site_visit, pickup";
+    if (typeof payload.appointment_type !== "string" || !["installation", "pickup", "site_visit"].includes(payload.appointment_type)) return "appointment_type ต้องเป็น installation, pickup, site_visit";
   }
   if (payload.location !== undefined) {
     if (typeof payload.location !== "string" || payload.location.length > 10000 || !payload.location.trim()) return "location ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 10000 ตัวอักษร";
