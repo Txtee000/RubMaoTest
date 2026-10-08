@@ -49,6 +49,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "กรุณาส่ง JSON object" }, { status: 400 });
     }
 
+    if ((body.reminder_status !== undefined && body.reminder_status !== "pending") ||
+      (body.reminder_sent_at !== undefined && body.reminder_sent_at !== null)) {
+      return NextResponse.json({ error: "นัดหมายใหม่ต้องยังไม่ได้แจ้งเตือน" }, { status: 400 });
+    }
+
     const payload = {
       project_id: body.project_id,
       customer_id: body.customer_id,
@@ -56,8 +61,8 @@ export async function POST(request: Request) {
       location: body.location,
       appointment_datetime: body.appointment_datetime,
       status: body.status,
-      reminder_status: body.reminder_status ?? "pending",
-      reminder_sent_at: body.reminder_sent_at ?? null,
+      reminder_status: "pending",
+      reminder_sent_at: null,
     };
     const message = validatePayload(payload);
     if (message) {
@@ -95,8 +100,12 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "กรุณาส่ง JSON object" }, { status: 400 });
     }
 
-    // รับเฉพาะคอลัมน์ที่แก้ไขได้ใน schema
-    const fields = ["project_id","customer_id","appointment_type","location","appointment_datetime","status","reminder_status","reminder_sent_at"];
+    if (Object.prototype.hasOwnProperty.call(body, "reminder_status") ||
+      Object.prototype.hasOwnProperty.call(body, "reminder_sent_at")) {
+      return NextResponse.json({ error: "สถานะและเวลาแจ้งเตือนแก้ไขได้ผ่านการกดแจ้งเตือนเท่านั้น" }, { status: 400 });
+    }
+    // Reminder metadata is maintained only by the manual send endpoint.
+    const fields = ["project_id","customer_id","appointment_type","location","appointment_datetime","status"];
     const updates: Record<string, unknown> = {};
     for (const field of fields) {
       if (Object.prototype.hasOwnProperty.call(body, field)) updates[field] = body[field];
@@ -188,7 +197,7 @@ function validatePayload(payload: Record<string, unknown>, partial = false): str
     if (typeof payload.status !== "string" || payload.status.length > 50 || !payload.status.trim()) return "status ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 50 ตัวอักษร";
   }
   if (payload.reminder_status !== undefined) {
-    if (typeof payload.reminder_status !== "string" || !["pending","send","failed"].includes(payload.reminder_status)) return "reminder_status ต้องเป็น pending, send, failed";
+    if (typeof payload.reminder_status !== "string" || !["pending","sent","failed"].includes(payload.reminder_status)) return "reminder_status ต้องเป็น pending, sent, failed";
   }
   if (payload.reminder_sent_at !== undefined && payload.reminder_sent_at !== null) {
     if (typeof payload.reminder_sent_at !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T|$)/.test(payload.reminder_sent_at) || !Number.isFinite(Date.parse(payload.reminder_sent_at))) return "reminder_sent_at ต้องเป็นวันที่แบบ ISO 8601";

@@ -1033,6 +1033,18 @@ textarea {
   flex-direction: column;
   align-items: flex-end;
 }
+.appointment-line-reminder {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+.appointment-line-reminder small {
+  color: #95a3b8;
+  font-size: 11px;
+}
+.project-appointments .appointment-line-reminder button {
+  margin-left: 0;
+}
 .employee-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

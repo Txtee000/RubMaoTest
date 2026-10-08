@@ -38,7 +38,7 @@ export interface Appointment {
   location: string;
   appointment_datetime: string;
   status: string;
-  reminder_status: "pending" | "send" | "failed";
+  reminder_status: "pending" | "sent" | "failed";
   reminder_sent_at: string | null;
 }
 

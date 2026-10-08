@@ -37,7 +37,11 @@ export type Appointment = {
   appointment_datetime: string;
   location: string;
   status: "pending" | "completed";
+  reminder_status: "pending" | "sent" | "failed";
+  reminder_sent_at: string | null;
 };
+
+export type AppointmentInput = Omit<Appointment, "reminder_status" | "reminder_sent_at">;
 
 export type Employee = { id: number; employee_name: string; role: string; phone_number: string };
 

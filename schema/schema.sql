@@ -46,7 +46,7 @@ CREATE TABLE appointment (
   appointment_datetime TIMESTAMP NOT NULL,
   status VARCHAR(50) NOT NULL,
   reminder_status VARCHAR(20) NOT NULL DEFAULT 'pending'
-    CHECK (reminder_status IN ('pending', 'send', 'failed')),
+    CHECK (reminder_status IN ('pending', 'sent', 'failed')),
   reminder_sent_at TIMESTAMP,
   FOREIGN KEY (project_id) REFERENCES project(project_id),
   FOREIGN KEY (customer_id) REFERENCES customer(customer_id)

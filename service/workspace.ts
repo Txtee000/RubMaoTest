@@ -1,4 +1,4 @@
-import type { AppData, Project, Appointment } from "@/features/project/types";
+import type { AppData, Project, Appointment, AppointmentInput } from "@/features/project/types";
 import type { Project as ProjectRow, JobMaterial, Payment as PaymentRow } from "@/schema";
 import { getProject, updateProject } from "./project";
 import { getCustomer } from "./customer";
@@ -47,6 +47,8 @@ export async function getWorkspace(signal?: AbortSignal): Promise<AppData> {
       appointment_type: appointment.appointment_type,
       appointment_datetime: bangkokTime(appointment.appointment_datetime),
       location: appointment.location, status: appointment.status as Appointment["status"],
+      reminder_status: appointment.reminder_status,
+      reminder_sent_at: appointment.reminder_sent_at ? bangkokTime(appointment.reminder_sent_at) : null,
     })),
   };
 }
@@ -103,14 +105,14 @@ export async function saveProjectDetails(project: Project, previous: Project): P
   await updateProject(project.id, changes);
 }
 
-export async function saveProjectAppointment(appointment: Appointment, project: Project, exists: boolean) {
+export async function saveProjectAppointment(appointment: AppointmentInput, project: Project, exists: boolean) {
   const row = {
     project_id: project.id, customer_id: project.customer_id,
     appointment_type: appointment.appointment_type, appointment_datetime: localTime(appointment.appointment_datetime),
     location: appointment.location, status: appointment.status,
   };
   if (exists) await updateAppointment(appointment.id, row);
-  else await createAppointment({ ...row, reminder_status: "pending", reminder_sent_at: null });
+  else await createAppointment(row);
 }
 
 
