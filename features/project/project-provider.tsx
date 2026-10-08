@@ -3,7 +3,8 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { getWorkspace, saveProjectDetails, saveProjectAppointment } from "@/service/workspace";
-import type { Appointment, AppData, Project } from "./types";
+import { sendAppointmentReminder } from "@/service/appointment";
+import type { AppointmentInput, AppData, Project } from "./types";
 
 const emptyData: AppData = { projects: [], employees: [], appointments: [] };
 type ProjectContextValue = {
@@ -14,7 +15,8 @@ type ProjectContextValue = {
   loadError: string;
   reload: () => Promise<void>;
   updateProject: (project: Project) => Promise<boolean>;
-  saveAppointment: (appointment: Appointment) => Promise<boolean>;
+  saveAppointment: (appointment: AppointmentInput) => Promise<boolean>;
+  sendReminder: (id: number) => Promise<boolean>;
 };
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
@@ -98,15 +100,19 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     return save(() => saveProjectDetails(project, previous));
   }
 
-  async function saveAppointment(appointment: Appointment) {
+  async function saveAppointment(appointment: AppointmentInput) {
     const project = data.projects.find((item) => item.id === appointment.project_id);
     if (!project) { setError("ไม่พบงานของนัดหมายนี้"); return false; }
     const exists = data.appointments.some((item) => item.id === appointment.id);
     return save(() => saveProjectAppointment(appointment, project, exists));
   }
 
+  async function sendReminder(id: number) {
+    return save(async () => { await sendAppointmentReminder(id); });
+  }
+
   return (
-    <ProjectContext.Provider value={{ data, ready, saving, error, loadError, reload, updateProject, saveAppointment }}>
+    <ProjectContext.Provider value={{ data, ready, saving, error, loadError, reload, updateProject, saveAppointment, sendReminder }}>
       {children}
     </ProjectContext.Provider>
   );

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState, LoadingState, PageHeading, Section } from "@/features/shared/ui";
 import { useProjects } from "@/features/project/project-provider";
 import { appointmentLabels, formatDate } from "@/features/project/project-utils";
+import { AppointmentReminder } from "../components/appointment-reminder";
 
 export function AppointmentPage() {
   const { data, ready, saving, saveAppointment } = useProjects();
@@ -64,6 +65,7 @@ export function AppointmentPage() {
                     <Link href={`/project/${a.project_id}`} className="text-link">
                       เปิดงาน <ArrowUpRight size={16} />
                     </Link>
+                    <AppointmentReminder appointment={a} canSend={a.status === "pending" && !!p && !["completed", "reject"].includes(p.status)} />
                     {a.status === "pending" && p?.status !== "reject" && (
                       <Button
                         disabled={saving}
@@ -80,7 +82,7 @@ export function AppointmentPage() {
           </div>
         )}
       </Section>
-      <p className="page-note">การแจ้งเตือน LINE ยังไม่เปิดใช้งานในเวอร์ชัน frontend</p>
+      <p className="page-note">หัวหน้ากดแจ้งเตือนได้หลายครั้ง โดยเก็บเวลาที่แจ้งเตือนครั้งแรก</p>
     </>
   );
 }

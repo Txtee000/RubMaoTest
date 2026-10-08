@@ -7,6 +7,7 @@ import { Section } from "@/features/shared/ui";
 import { appointmentLabels, formatDate } from "../project-utils";
 import { useProjects } from "../project-provider";
 import type { Appointment, Project } from "../types";
+import { AppointmentReminder } from "@/features/appointment/components/appointment-reminder";
 
 export function AppointmentPanel({ project, initialType = "site_visit" }: { project: Project; initialType?: Appointment["appointment_type"] }) {
   const { data, saveAppointment } = useProjects();
@@ -70,6 +71,7 @@ export function AppointmentPanel({ project, initialType = "site_visit" }: { proj
                 <strong>{formatDate(a.appointment_datetime, true)}</strong>
                 <p className="text-muted">{a.location}</p>
                 <small>{a.status === "completed" ? "ดำเนินการแล้ว" : "รอดำเนินการ"}</small>
+                <AppointmentReminder appointment={a} canSend={a.status === "pending" && !["completed", "reject"].includes(project.status)} />
                 {a.status === "pending" && !["completed", "reject"].includes(project.status) && (
                   <div className="button-row ml-auto">
                   <Button
@@ -214,7 +216,7 @@ export function AppointmentPanel({ project, initialType = "site_visit" }: { proj
           </form>
         </Section>
       )}
-      <p className="page-note">ยังไม่ส่งแจ้งเตือนผ่าน LINE OA ในเวอร์ชันนี้</p>
+      <p className="page-note">หัวหน้ากดแจ้งเตือนได้หลายครั้ง โดยเก็บเวลาที่แจ้งเตือนครั้งแรก</p>
     </>
   );
 }

@@ -117,7 +117,28 @@ if (!deleteResponse.ok) throw new Error(deleteResult.error);
 
 บล็อกด้านบนแยกตัวอย่างด้วย comment; JSON ที่ส่งจริงต้องไม่มี comment
 appointment_type ใช้ `installation`, `pickup` หรือ `site_visit`
-reminder_status เป็น `pending` โดยค่าเริ่มต้น และแก้เป็น `send` หรือ `failed` ได้
+reminder_status เป็น `pending` โดยค่าเริ่มต้น และ API บันทึกการแจ้งเตือนจะเปลี่ยนเป็น `sent`
+POST นัดหมายใหม่ใช้ `pending`/`null` เสมอ และ PUT ไม่รับการแก้ `reminder_status`/`reminder_sent_at`
+
+## บันทึกการแจ้งเตือนนัดหมายด้วยการกด
+
+หัวหน้าที่เข้าสู่ระบบกดปุ่ม **แจ้งเตือน** จากหน้านัดหมายหรือรายละเอียดงาน
+แต่ละการกดเรียก `POST /api/appointment/reminder?id=รหัสนัดหมาย` เพื่อบันทึกสถานะในฐานข้อมูลเท่านั้น
+กด **แจ้งเตือนอีกครั้ง** ได้หลังบันทึกแล้ว ไม่มีการตั้งเวลาส่งอัตโนมัติ
+ส่งได้เฉพาะนัด `pending` ของงานที่ยังไม่ปิดหรือถูกปฏิเสธ
+
+เมื่อกดครั้งแรกและบันทึกสำเร็จ ระบบตั้ง `reminder_status = sent`
+และ `reminder_sent_at` เป็นเวลาที่เริ่มคำขอครั้งนั้นในประเทศไทย
+ครั้งถัดไปเก็บเวลาเดิม รวมถึงเมื่อมีคำขอพร้อมกัน
+`appointment.status` ยังใช้ `pending`/`completed` สำหรับสถานะดำเนินการของนัด
+ถ้าบันทึกไม่สำเร็จ จะคงสถานะและเวลาเดิม และกดลองใหม่ได้
+ข้อมูลเก่าที่มีเวลาแล้วแต่สถานะเป็น `pending`/`failed` จะเปลี่ยนเป็น `sent` โดยรักษาเวลาเดิม
+
+ฐานข้อมูลเดิมให้รัน `schema/manual-appointment-reminders.sql` เพื่อเปลี่ยนค่า `send` เป็น `sent`
+และแก้ CHECK constraint (ฐานข้อมูลใหม่ใช้ `schema/schema.sql`)
+ฟีเจอร์นี้ไม่ส่งข้อความ LINE จริง ไม่ต้องตั้ง `LINE_CHANNEL_ACCESS_TOKEN` หรือ LINE user ID ของลูกค้า
+
+ทดสอบแบบไม่เขียนฐานข้อมูลจริงด้วย `npm test` (Node.js 24)
 
 ## การตั้งค่าและข้อจำกัด
 
@@ -133,5 +154,3 @@ frontend คำนวณราคาแล้วเรียก API ผ่าน
 ถ้า RLS ซ่อนรายการ การแก้ไข/ลบจะตอบ 404 เหมือนกรณีไม่พบรายการ
 POST/PUT/DELETE ใช้ `.select()` เพื่อส่งข้อมูลที่บันทึกกลับ จึงต้องมีสิทธิ์ SELECT ร่วมกับสิทธิ์เขียน
 อ้างอิง: [Supabase — select หลังบันทึกข้อมูล](https://supabase.com/docs/reference/javascript/using-modifiers-select)
-
-ไม่ได้รันเทสหรือเรียกเขียน/ลบข้อมูลใน Supabase ตามคำขอ
