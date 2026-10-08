@@ -119,6 +119,8 @@ export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam,
         <div className="flex flex-wrap gap-1 ml-6">
           {nextStatuses.map((status) => (
             <Button key={status} className="mb-2" variant={status.startsWith("revision") ? "outline" : "default"}
+              disabled={["waiting_shop_inspection", "waiting_site_inspection"].includes(status) && !project.employee_ids.length}
+              aria-describedby={["waiting_shop_inspection", "waiting_site_inspection"].includes(status) && !project.employee_ids.length ? "workflow-team-required" : undefined}
               onClick={() => void changeStatus(status)}>
               {status === "delivered_shop" && <Store size={16} aria-hidden="true" />}
               {status === "delivered_site" && <MapPin size={16} aria-hidden="true" />}
@@ -138,6 +140,11 @@ export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam,
             <Button className="mb-2 hover:bg-[#F26E50] bg-[#D95032] text-white hover:text-white" variant="outline" onClick={onEstimate}>ประเมินราคาใหม่</Button>
           )}
         </div>
+      )}
+      {!project.employee_ids.length && nextStatuses.some((status) => ["waiting_shop_inspection", "waiting_site_inspection"].includes(status)) && (
+        <p id="workflow-team-required" className="pl-6 pt-1 pb-2 text-sm text-muted">
+          เลือกและบันทึกสมาชิกอย่างน้อย 1 คนก่อนส่งตรวจ
+        </p>
       )}
       {project.status === "accepted" && payments.remaining > 0 && (
         <div className="notice flex flex-wrap items-center justify-between gap-3">

@@ -19,7 +19,7 @@ export function TeamPanel({
   const canAssign = !["pending", "estimated", "completed", "reject"].includes(project.status);
   return (
     <Section
-      title="เลือกทีมที่รับผิดชอบ"
+      title="เลือกพนักงานที่รับผิดชอบ"
       description="มอบหมายพนักงานได้หลายคนสำหรับงานที่ร้านและงานติดตั้ง"
     >
       <div className="team-options">

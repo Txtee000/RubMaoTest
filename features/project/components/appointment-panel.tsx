@@ -202,7 +202,6 @@ export function AppointmentPanel({ project, initialType = "site_visit" }: { proj
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
-                <span id="appointment-location-hint" className="text-muted">กด Shift+Enter เพื่อขึ้นบรรทัดใหม่</span>
               </label>
             </div>
             <div className="form-actions">

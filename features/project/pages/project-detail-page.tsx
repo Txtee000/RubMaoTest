@@ -172,6 +172,7 @@ export function ProjectDetailPage({
           hidden={tab !== "estimate"}
         >
           <EstimatePanel
+            key={project.materials.map((material) => material.id).join(",")}
             project={project}
             onSave={async (updatedProject) => {
               const saved = await updateProject(updatedProject);

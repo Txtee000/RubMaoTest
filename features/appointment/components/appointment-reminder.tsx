@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Send } from "lucide-react";
+import { Bell, CheckCircle2, LoaderCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProjects } from "@/features/project/project-provider";
 import { formatDate } from "@/features/project/project-utils";
@@ -24,21 +24,24 @@ export function AppointmentReminder({ appointment, canSend }: { appointment: App
   }
 
   return (
-    <div className="appointment-line-reminder">
-      <small>
+    <div className="appointment-line-reminder" data-state={appointment.reminder_status}>
+      <div className="appointment-reminder-status">
+        {appointment.reminder_status === "sent" ? <CheckCircle2 size={15} aria-hidden="true" /> : <Bell size={15} aria-hidden="true" />}
+        <small>
         {appointment.reminder_sent_at
           ? `แจ้งเตือนครั้งแรก: ${formatDate(appointment.reminder_sent_at, true)}`
           : appointment.reminder_status === "sent"
             ? "แจ้งเตือนแล้ว (ไม่มีเวลาครั้งแรก)"
             : appointment.reminder_status === "failed" ? "แจ้งเตือนไม่สำเร็จ สามารถลองใหม่ได้" : "ยังไม่ได้แจ้งเตือน"}
-      </small>
+        </small>
+      </div>
       {canSend && (
-        <Button type="button" variant="outline" disabled={saving || sending} onClick={send} className="bg-red-400">
-          <Send size={15} aria-hidden="true" />
+        <Button type="button" variant="outline" disabled={saving || sending} onClick={send} className="appointment-reminder-button">
+          {sending ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : <Send size={15} aria-hidden="true" />}
           {sending ? "กำลังบันทึก..." : appointment.reminder_status === "sent" ? "แจ้งเตือนอีกครั้ง" : "แจ้งเตือน"}
         </Button>
       )}
-      {message && <small role="status">{message}</small>}
+      {message && <small role="status" className="appointment-reminder-feedback">{message}</small>}
     </div>
   );
 }
