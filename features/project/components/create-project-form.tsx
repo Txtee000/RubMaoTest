@@ -55,7 +55,14 @@ export function CreateProjectForm({ onCancel }: { onCancel: () => void }) {
 
   return (
     <Section title="สร้างโครงการ" description="เลือกลูกค้าที่มีอยู่และบันทึกงานใหม่ แล้วประเมินราคาในหน้ารายละเอียดงาน">
-      <form onSubmit={save}>
+      <form
+        onSubmit={save}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && event.target instanceof HTMLInputElement) {
+            event.preventDefault();
+          }
+        }}
+      >
         <fieldset disabled={saving} className="border-0 p-0 m-0 min-w-0">
           <div className="form-grid">
             <label>ชื่องาน

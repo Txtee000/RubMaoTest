@@ -32,7 +32,15 @@ export default function LoginPage() {
       </div>
       <h1 className="mb-2 text-2xl font-semibold">เข้าสู่ระบบ</h1>
       <p className="mb-6 text-sm text-muted-foreground">เข้าสู่พื้นที่ทำงานสำหรับหัวหน้า</p>
-      <form onSubmit={submit} className="space-y-5">
+      <form
+        onSubmit={submit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && event.target instanceof HTMLInputElement) {
+            event.preventDefault();
+          }
+        }}
+        className="space-y-5"
+      >
         <label className="block">ชื่อผู้ใช้<input className="mt-2 w-full" autoComplete="username" name="username" required maxLength={256} value={username} onChange={(e) => setUsername(e.target.value)} disabled={busy} /></label>
         <label className="block">รหัสผ่าน<input className="mt-2 w-full" type="password" autoComplete="current-password" name="password" required maxLength={1024} value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy} /></label>
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}

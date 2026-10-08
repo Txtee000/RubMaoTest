@@ -57,7 +57,7 @@ export function AppointmentPage() {
                     <p>{formatDate(a.appointment_datetime, true)}</p>
                     <small>
                       <MapPin size={14} />
-                      {a.location}
+                      <span className="whitespace-pre-wrap break-words">{a.location}</span>
                     </small>
                   </div>
                   <div className="schedule-actions">

@@ -68,7 +68,7 @@ export function AppointmentPanel({ project, initialType = "site_visit" }: { proj
                   {appointmentLabels[a.appointment_type]}
                 </span>
                 <strong>{formatDate(a.appointment_datetime, true)}</strong>
-                <p className="text-muted">{a.location}</p>
+                <p className="text-muted whitespace-pre-wrap break-words">{a.location}</p>
                 <small>{a.status === "completed" ? "ดำเนินการแล้ว" : "รอดำเนินการ"}</small>
                 {a.status === "pending" && !["completed", "reject"].includes(project.status) && (
                   <div className="button-row ml-auto">
@@ -109,7 +109,14 @@ export function AppointmentPanel({ project, initialType = "site_visit" }: { proj
           title={editingId ? "แก้ไขนัดหมาย" : "เพิ่มนัดหมาย"}
           description="หัวหน้าเลือกประเภทนัด วันเวลา และสถานที่ได้เอง"
         >
-          <form onSubmit={save}>
+          <form
+            onSubmit={save}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && event.target instanceof HTMLInputElement) {
+                event.preventDefault();
+              }
+            }}
+          >
             <div className="form-grid">
               <label>
                 ประเภทนัด
@@ -179,12 +186,21 @@ export function AppointmentPanel({ project, initialType = "site_visit" }: { proj
               </div>
               <label className="full-width">
                 สถานที่
-                <input
+                <textarea
                   required
+                  rows={3}
+                  maxLength={10000}
+                  aria-describedby="appointment-location-hint"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                      event.preventDefault();
+                    }
+                  }}
                   placeholder="ที่อยู่หน้างาน หรือชื่อร้าน"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
+                <span id="appointment-location-hint" className="text-muted">กด Shift+Enter เพื่อขึ้นบรรทัดใหม่</span>
               </label>
             </div>
             <div className="form-actions">

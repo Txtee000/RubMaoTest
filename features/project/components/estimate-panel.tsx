@@ -115,7 +115,14 @@ export function EstimatePanel({
   }
 
   return (
-    <form onSubmit={saveEstimate}>
+    <form
+      onSubmit={saveEstimate}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && event.target instanceof HTMLInputElement) {
+          event.preventDefault();
+        }
+      }}
+    >
       <Section
         title="รายการวัสดุ"
         description="กรอกวัสดุของงานโดยตรง พร้อมหน่วยและราคาต่อหน่วย"

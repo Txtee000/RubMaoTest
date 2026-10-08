@@ -118,7 +118,14 @@ export function PaymentPanel({
       </Section>
       {canReceive && payment.remaining > 0 && (
         <Section title="บันทึกการรับเงิน" description="บันทึกยอดที่หัวหน้าได้รับเงินจริง">
-          <form onSubmit={savePayment}>
+          <form
+            onSubmit={savePayment}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && event.target instanceof HTMLInputElement) {
+                event.preventDefault();
+              }
+            }}
+          >
             <fieldset disabled={busy} className="border-0 p-0 m-0 min-w-0">
             <div className="form-grid">
               <label>
