@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const payload = {
       customer_name: body.customer_name,
       phone_number: body.phone_number,
-      line_id: body.line_id ?? null,
+      line_user_id: body.line_user_id ?? null,
     };
     const message = validatePayload(payload);
     if (message) {
@@ -79,7 +79,7 @@ export async function PUT(request: Request) {
     }
 
     // รับเฉพาะคอลัมน์ที่แก้ไขได้ใน schema
-    const fields = ["customer_name","phone_number","line_id"];
+    const fields = ["customer_name","phone_number","line_user_id"];
     const updates: Record<string, unknown> = {};
     for (const field of fields) {
       if (Object.prototype.hasOwnProperty.call(body, field)) updates[field] = body[field];
@@ -150,8 +150,8 @@ function validatePayload(payload: Record<string, unknown>, partial = false): str
   if (payload.phone_number !== undefined) {
     if (typeof payload.phone_number !== "string" || payload.phone_number.length > 30 || !payload.phone_number.trim()) return "phone_number ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 30 ตัวอักษร";
   }
-  if (payload.line_id !== undefined && payload.line_id !== null) {
-    if (typeof payload.line_id !== "string" || payload.line_id.length > 255) return "line_id ต้องเป็นข้อความ ยาวไม่เกิน 255 ตัวอักษร";
+  if (payload.line_user_id !== undefined && payload.line_user_id !== null) {
+    if (typeof payload.line_user_id !== "string" || payload.line_user_id.length > 255) return "line_user_id ต้องเป็นข้อความ ยาวไม่เกิน 255 ตัวอักษร";
   }
   return null;
 }

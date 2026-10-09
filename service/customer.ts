@@ -8,7 +8,7 @@ export async function getCustomer(filters: Record<string, string> = {}, signal?:
   return result.customers;
 }
 
-export async function createCustomer(data: Omit<Customer, "customer_id" | "line_id"> & Partial<Omit<Customer, "customer_id">>): Promise<Customer> {
+export async function createCustomer(data: Omit<Customer, "customer_id" | "line_user_id"> & Partial<Omit<Customer, "customer_id">>): Promise<Customer> {
   const response = await fetch("/api/customer", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

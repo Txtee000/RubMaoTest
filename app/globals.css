@@ -938,6 +938,45 @@ textarea {
   background: #edf9f4;
   color: #329978;
 }
+.rubmao-toast {
+  --toast-accent: var(--primary);
+  background: var(--card);
+  color: var(--foreground);
+  border-color: color-mix(in srgb, var(--toast-accent) 25%, var(--card));
+  border-left: 4px solid var(--toast-accent);
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--foreground) 12%, transparent);
+}
+.rubmao-toast[data-toast-type="success"] {
+  --toast-accent: #229c79;
+}
+.rubmao-toast[data-toast-type="error"] {
+  --toast-accent: #d95665;
+}
+.rubmao-toast[data-toast-type="warning"] {
+  --toast-accent: #bb913e;
+}
+.rubmao-toast [data-slot="toast-icon"] {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--toast-accent) 10%, var(--card));
+  color: var(--toast-accent);
+}
+.rubmao-toast [data-slot="toast-icon"] svg {
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+.rubmao-toast [data-slot="toast-title"] {
+  font-weight: 600;
+  line-height: 1.5;
+}
+.rubmao-toast [data-slot="toast-description"] {
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
 .page-note {
   color: #9caabe;
   font-size: 11px;

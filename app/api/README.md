@@ -44,7 +44,7 @@ const customerResponse = await fetch("/api/customer", {
   body: JSON.stringify({
     customer_name: "สมชาย",
     phone_number: "0812345678",
-    line_id: null,
+    line_user_id: null,
   }),
 });
 const customerResult = await customerResponse.json();
@@ -117,26 +117,39 @@ if (!deleteResponse.ok) throw new Error(deleteResult.error);
 
 บล็อกด้านบนแยกตัวอย่างด้วย comment; JSON ที่ส่งจริงต้องไม่มี comment
 appointment_type ใช้ `installation`, `pickup` หรือ `site_visit`
-reminder_status เป็น `pending` โดยค่าเริ่มต้น และ API บันทึกการแจ้งเตือนจะเปลี่ยนเป็น `sent`
+reminder_status เป็น `pending` โดยค่าเริ่มต้น และ API แจ้งเตือนจะเปลี่ยนเป็น `sent` หลัง LINE รับคำขอสำเร็จ
 POST นัดหมายใหม่ใช้ `pending`/`null` เสมอ และ PUT ไม่รับการแก้ `reminder_status`/`reminder_sent_at`
 
-## บันทึกการแจ้งเตือนนัดหมายด้วยการกด
+## ส่งแจ้งเตือนนัดหมาย LINE ด้วยการกด
 
 หัวหน้าที่เข้าสู่ระบบกดปุ่ม **แจ้งเตือน** จากหน้านัดหมายหรือรายละเอียดงาน
-แต่ละการกดเรียก `POST /api/appointment/reminder?id=รหัสนัดหมาย` เพื่อบันทึกสถานะในฐานข้อมูลเท่านั้น
-กด **แจ้งเตือนอีกครั้ง** ได้หลังบันทึกแล้ว ไม่มีการตั้งเวลาส่งอัตโนมัติ
+แต่ละการกดเรียก `POST /api/appointment/reminder?id=รหัสนัดหมาย` เพื่อส่งข้อความ LINE ใหม่
+ผู้รับคือ `customer.line_user_id` ของลูกค้าที่อ้างอิงด้วย `appointment.customer_id`
+ข้อความระบุชื่อลูกค้า ชื่องาน ประเภทนัดหมาย วันเวลาไทย และสถานที่
+กด **แจ้งเตือนอีกครั้ง** เพื่อส่งข้อความใหม่ได้ ไม่มีการตั้งเวลาส่งอัตโนมัติ
 ส่งได้เฉพาะนัด `pending` ของงานที่ยังไม่ปิดหรือถูกปฏิเสธ
 
-เมื่อกดครั้งแรกและบันทึกสำเร็จ ระบบตั้ง `reminder_status = sent`
+เมื่อ LINE รับคำขอและบันทึกครั้งแรกสำเร็จ ระบบตั้ง `reminder_status = sent`
 และ `reminder_sent_at` เป็นเวลาที่เริ่มคำขอครั้งนั้นในประเทศไทย
 ครั้งถัดไปเก็บเวลาเดิม รวมถึงเมื่อมีคำขอพร้อมกัน
 `appointment.status` ยังใช้ `pending`/`completed` สำหรับสถานะดำเนินการของนัด
-ถ้าบันทึกไม่สำเร็จ จะคงสถานะและเวลาเดิม และกดลองใหม่ได้
-ข้อมูลเก่าที่มีเวลาแล้วแต่สถานะเป็น `pending`/`failed` จะเปลี่ยนเป็น `sent` โดยรักษาเวลาเดิม
+ถ้าส่งไม่สำเร็จ จะคงสถานะและเวลาเดิม หาก LINE รับคำขอแล้วแต่บันทึกฐานข้อมูลไม่สำเร็จ
+API จะแจ้งข้อผิดพลาดนี้โดยเฉพาะ การกดใหม่เป็นการส่งข้อความใหม่และอาจทำให้ได้รับข้อความเพิ่ม
+ข้อมูลเก่าที่มีเวลาแล้วแต่สถานะเป็น `pending`/`failed` จะเปลี่ยนเป็น `sent` หลัง LINE รับคำขอ โดยรักษาเวลาเดิม
+สถานะ `sent` หมายถึง LINE รับคำขอแล้ว ไม่ใช่การยืนยันว่าลูกค้าได้รับหรืออ่านข้อความ
+
+ตั้ง `LINE_CHANNEL_ACCESS_TOKEN` ใน `.env` ฝั่ง server และบันทึก LINE user ID ใน `customer.line_user_id`
+ใช้ `sendLineMessage()` จาก `lib/line.ts` พร้อม UUID ใหม่เป็น `retryKey` สำหรับแต่ละการกด
+ไม่มีการส่งซ้ำอัตโนมัติ หากเพิ่มการ retry ต้องใช้ key ผู้รับ และข้อความเดิมภายใน 24 ชั่วโมง
+ตาม [เอกสาร LINE](https://developers.line.biz/en/docs/messaging-api/retrying-api-request/)
+
+ข้อผิดพลาด: ไม่พบลูกค้า `404`, ไม่มี LINE user ID `422`, ไม่มี token `503`,
+LINE ปฏิเสธหรือ timeout `502`, ฐานข้อมูลล้มเหลว `500`
 
 ฐานข้อมูลเดิมให้รัน `schema/manual-appointment-reminders.sql` เพื่อเปลี่ยนค่า `send` เป็น `sent`
 และแก้ CHECK constraint (ฐานข้อมูลใหม่ใช้ `schema/schema.sql`)
-ฟีเจอร์นี้ไม่ส่งข้อความ LINE จริง ไม่ต้องตั้ง `LINE_CHANNEL_ACCESS_TOKEN` หรือ LINE user ID ของลูกค้า
+ฐานข้อมูลที่ใช้งานมี `customer.line_user_id` อยู่แล้ว โค้ดและ API ใช้ชื่อนี้แทน `line_id`
+ตัวอย่าง SQL เดิมยังใช้ `line_id`; ไม่ได้แก้ไฟล์ SQL หรือทำ migration ในการเปลี่ยนแปลงนี้
 
 ทดสอบแบบไม่เขียนฐานข้อมูลจริงด้วย `npm test` (Node.js 24)
 

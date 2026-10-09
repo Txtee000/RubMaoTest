@@ -3,7 +3,7 @@ export interface Customer {
   customer_id: number;
   customer_name: string;
   phone_number: string;
-  line_id: string | null;
+  line_user_id: string | null;
 }
 
 export interface Project {

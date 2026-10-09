@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ProjectProvider } from "@/features/project/project-provider";
 import { DashboardShell } from "@/features/dashboard/components/dashboard-shell";
+import { Toaster } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: "RubMao · จัดการงานของร้าน",
@@ -15,6 +16,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ProjectProvider>
           <DashboardShell>{children}</DashboardShell>
         </ProjectProvider>
+        <Toaster />
       </body>
     </html>
   );
