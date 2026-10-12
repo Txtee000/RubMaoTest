@@ -111,7 +111,7 @@ export function EstimatePanel({
     // service ใส่ ID จริงกลับในรายการที่เพิ่มสำเร็จแล้ว
     setMaterials(cleanMaterials);
     if (!saved) { setMessage("บันทึกไม่สำเร็จ ดูรายละเอียดด้านบน"); return; }
-    setMessage("บันทึกการประเมินราคาแล้ว เปิดหน้าบิลเพื่อพิมพ์ใบเสนอราคาได้");
+    setMessage("");
   }
 
   return (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   FileText,
@@ -14,6 +14,8 @@ import {
   CalendarDays,
   Wallet,
   GitBranch,
+  CircleCheck,
+  X,
 } from "lucide-react";
 import { useProjects } from "../project-provider";
 import { calculatePayments, money, projectPrice } from "../project-utils";
@@ -44,7 +46,14 @@ export function ProjectDetailPage({
 }) {
   const { data, ready, saving, updateProject } = useProjects();
   const [tab, setTab] = useState(tabs.some((t) => t.id === initialTab) ? initialTab : "workflow");
+  const [estimateSaved, setEstimateSaved] = useState(false);
   const [scheduleRequest, setScheduleRequest] = useState<{ type: Appointment["appointment_type"]; version: number }>({ type: "site_visit", version: 0 });
+  useEffect(() => {
+    if (!estimateSaved) return;
+    const timer = window.setTimeout(() => setEstimateSaved(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [estimateSaved]);
+
   const project = data.projects.find((p) => p.id === Number(projectId));
   if (!ready) return <LoadingState />;
   if (!project)
@@ -127,6 +136,28 @@ export function ProjectDetailPage({
         </div>
         <div><span>รายการวัสดุ</span><strong>{project.materials.length} รายการ</strong></div>
       </div>
+      {estimateSaved && (
+        <div
+          role="status"
+          aria-atomic="true"
+          className="estimate-success-toast fixed inset-x-4 top-4 z-50 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-green-800 shadow-lg sm:left-auto sm:top-6 sm:right-6 sm:w-[420px]"
+        >
+          <CircleCheck size={22} className="shrink-0 text-green-600" aria-hidden="true" />
+          <p className="flex-1 text-sm font-medium">
+            บันทึกการประเมินราคาเรียบร้อยเเละรอลูกค้าพิจารณา
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="text-green-700 hover:bg-green-100 hover:text-green-900"
+            aria-label="ปิดแจ้งเตือนการบันทึกประเมินราคา"
+            onClick={() => setEstimateSaved(false)}
+          >
+            <X size={16} aria-hidden="true" />
+          </Button>
+        </div>
+      )}
       <div className="detail-tabs" role="tablist" aria-label="รายละเอียดงาน">
         {tabs.map((item) => (
           <button
@@ -175,8 +206,12 @@ export function ProjectDetailPage({
             key={project.materials.map((material) => material.id).join(",")}
             project={project}
             onSave={async (updatedProject) => {
+              setEstimateSaved(false);
               const saved = await updateProject(updatedProject);
-              if (saved) setTab("workflow");
+              if (saved) {
+                setEstimateSaved(true);
+                setTab("workflow");
+              }
               return saved;
             }}
           />
