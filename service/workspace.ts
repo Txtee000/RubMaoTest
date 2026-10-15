@@ -1,8 +1,9 @@
-import type { AppData, Project, Appointment, AppointmentInput } from "@/features/project/types";
+import type { AppData, Project, Appointment, AppointmentInput, Employee } from "@/features/project/types";
 import type { Project as ProjectRow, JobMaterial, Payment as PaymentRow } from "@/schema";
+import { getPhoneNumberError } from "@/lib/phone";
 import { getProject, updateProject } from "./project";
 import { getCustomer } from "./customer";
-import { getEmployee } from "./employee";
+import { getEmployee, createEmployee } from "./employee";
 import { getAppointment, createAppointment, updateAppointment } from "./appointment";
 import { getJobMaterial, createJobMaterial, updateJobMaterial, deleteJobMaterial } from "./job_material";
 import { getPayment, createPayment, updatePayment } from "./payment";
@@ -50,6 +51,24 @@ export async function getWorkspace(signal?: AbortSignal): Promise<AppData> {
       reminder_status: appointment.reminder_status,
       reminder_sent_at: appointment.reminder_sent_at ? bangkokTime(appointment.reminder_sent_at) : null,
     })),
+  };
+}
+
+export async function createWorkspaceEmployee(input: Omit<Employee, "id">): Promise<Employee> {
+  const payload = {
+    employee_name: input.employee_name.trim(),
+    role: input.role.trim(),
+    phone_number: input.phone_number.trim(),
+  };
+  if (!payload.employee_name || !payload.role || !payload.phone_number) {
+    throw new Error("กรอกชื่อพนักงาน ตำแหน่ง และเบอร์โทรให้ครบ");
+  }
+  const phoneError = getPhoneNumberError(payload.phone_number);
+  if (phoneError) throw new Error(phoneError);
+  const employee = await createEmployee(payload);
+  return {
+    id: employee.employee_id, employee_name: employee.employee_name,
+    role: employee.role, phone_number: employee.phone_number,
   };
 }
 

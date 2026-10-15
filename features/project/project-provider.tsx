@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { getWorkspace, saveProjectDetails, saveProjectAppointment } from "@/service/workspace";
+import { getWorkspace, saveProjectDetails, saveProjectAppointment, createWorkspaceEmployee } from "@/service/workspace";
 import { sendAppointmentReminder } from "@/service/appointment";
-import type { AppointmentInput, AppData, Project } from "./types";
+import type { AppointmentInput, AppData, Project, Employee } from "./types";
 
 const emptyData: AppData = { projects: [], employees: [], appointments: [] };
 type ProjectContextValue = {
@@ -15,6 +15,7 @@ type ProjectContextValue = {
   loadError: string;
   reload: () => Promise<void>;
   updateProject: (project: Project) => Promise<boolean>;
+  addEmployee: (input: Omit<Employee, "id">) => Promise<Employee | null>;
   saveAppointment: (appointment: AppointmentInput) => Promise<boolean>;
   sendReminder: (id: number) => Promise<boolean>;
 };
@@ -107,12 +108,32 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     return save(() => saveProjectAppointment(appointment, project, exists));
   }
 
+  async function addEmployee(input: Omit<Employee, "id">): Promise<Employee | null> {
+    if (busy.current) return null;
+    const id = loadId.current;
+    busy.current = true;
+    setSaving(true);
+    setError("");
+    try {
+      const employee = await createWorkspaceEmployee(input);
+      if (id !== loadId.current) return null;
+      setData((previous) => ({ ...previous, employees: [...previous.employees, employee] }));
+      return employee;
+    } catch (error) {
+      if (id === loadId.current) setError(error instanceof Error ? error.message : "เพิ่มพนักงานไม่สำเร็จ");
+      return null;
+    } finally {
+      busy.current = false;
+      setSaving(false);
+    }
+  }
+
   async function sendReminder(id: number) {
     return save(async () => { await sendAppointmentReminder(id); });
   }
 
   return (
-    <ProjectContext.Provider value={{ data, ready, saving, error, loadError, reload, updateProject, saveAppointment, sendReminder }}>
+    <ProjectContext.Provider value={{ data, ready, saving, error, loadError, reload, updateProject, addEmployee, saveAppointment, sendReminder }}>
       {children}
     </ProjectContext.Provider>
   );

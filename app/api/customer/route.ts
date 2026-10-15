@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { getPhoneNumberError } from "@/lib/phone";
 
 // GET: อ่านรายการทั้งหมด หรือกรองด้วย query string
 export async function GET(request: Request) {
@@ -148,7 +149,8 @@ function validatePayload(payload: Record<string, unknown>, partial = false): str
     if (typeof payload.customer_name !== "string" || payload.customer_name.length > 255 || !payload.customer_name.trim()) return "customer_name ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 255 ตัวอักษร";
   }
   if (payload.phone_number !== undefined) {
-    if (typeof payload.phone_number !== "string" || payload.phone_number.length > 30 || !payload.phone_number.trim()) return "phone_number ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 30 ตัวอักษร";
+    const phoneError = getPhoneNumberError(payload.phone_number);
+    if (phoneError) return phoneError;
   }
   if (payload.line_user_id !== undefined && payload.line_user_id !== null) {
     if (typeof payload.line_user_id !== "string" || payload.line_user_id.length > 255) return "line_user_id ต้องเป็นข้อความ ยาวไม่เกิน 255 ตัวอักษร";
