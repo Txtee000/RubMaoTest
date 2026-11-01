@@ -187,7 +187,7 @@ export function AppointmentPanel({ project, initialType = "site_visit" }: { proj
                 </div>
               </div>
               <label className="full-width">
-                สถานที่
+                รายละเอียด หรือ สถานที่
                 <textarea
                   required
                   rows={3}

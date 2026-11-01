@@ -13,9 +13,12 @@ import {
   Menu,
   X,
   ChevronRight,
-  CircleHelp,
+  LogOut,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 import { useProjects } from "@/features/project/project-provider";
+import { logout } from "@/service/auth";
 
 const navigation = [
   { href: "/", label: "ภาพรวม", icon: LayoutDashboard },
@@ -28,7 +31,25 @@ const navigation = [
 export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const { error, loadError, saving, reload } = useProjects();
+
+  async function handleLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await logout();
+      window.location.replace("/login");
+    } catch (error) {
+      toast.add({
+        type: "error",
+        title: "ออกจากระบบไม่สำเร็จ",
+        description: error instanceof Error ? error.message : "กรุณาลองอีกครั้ง",
+      });
+      setLoggingOut(false);
+    }
+  }
+
   if (pathname === "/login" || pathname.endsWith("/bill")) return <>{children}</>;
   const current = navigation.find((item) =>
     item.href === "/" ? pathname === "/" : pathname.startsWith(item.href),
@@ -92,7 +113,19 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             <ChevronRight size={14} />
             <strong>{current?.label ?? "รายละเอียดงาน"}</strong>
           </div>
-          
+          <Button
+            type="button"
+            variant="outline"
+            className="ml-3"
+            onClick={() => void handleLogout()}
+            disabled={loggingOut}
+            aria-busy={loggingOut}
+          >
+            <LogOut aria-hidden="true" />
+            <span className="sr-only sm:not-sr-only">
+              {loggingOut ? "กำลังออกจากระบบ…" : "ออกจากระบบ"}
+            </span>
+          </Button>
         </header>
         <main className="page-content">
           {(error || loadError) && (
