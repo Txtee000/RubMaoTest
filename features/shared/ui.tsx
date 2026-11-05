@@ -4,13 +4,17 @@ import type { ProjectStatus } from "../project/types";
 
 export function StatusBadge({ status }: { status: ProjectStatus }) {
   const color =
-    status === "completed" || status.endsWith("passed") || status === "accepted"
-      ? "green"
-      : status.startsWith("revision") || status === "reject"
-        ? "red"
-        : status === "pending" || status === "estimated"
+    status === "completed"
+      ? "completed"
+      : status === "accepted" || status.endsWith("passed")
+        ? "green"
+        : status.startsWith("revision")
           ? "amber"
-          : "blue";
+          : status === "reject"
+            ? "red"
+            : status === "pending" || status === "estimated"
+              ? "neutral"
+              : "blue";
   return (
     <span className={`badge badge-${color}`}>
       <span className="badge-dot" />

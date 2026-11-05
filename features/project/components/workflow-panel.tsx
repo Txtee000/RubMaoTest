@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Section } from "@/features/shared/ui";
 import { appointmentLabels, calculatePayments, canChangeStatus, formatDate, statusLabels } from "../project-utils";
 import { useProjects } from "../project-provider";
+import { ProjectStatusHistory } from "./status-history";
 import type { Appointment, Project, ProjectStatus } from "../types";
 
 export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam, onMaterial, onPayment }: {
@@ -47,6 +48,7 @@ export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam,
 
   if (project.status === "reject") {
     return (
+      <>
       <Section title="สถานะงาน" description="สรุปผลการตกลงงาน">
         <div className="mx-6 mb-4 max-w-xl overflow-hidden rounded-xl border border-rose-100 bg-rose-50/40">
           <div className="flex items-start gap-3 p-4">
@@ -72,10 +74,13 @@ export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam,
           </div>
         </div>
       </Section>
+      <ProjectStatusHistory logs={project.status_logs} error={data.statusLogsError} />
+      </>
     );
   }
 
   return (
+    <>
     <Section title="สถานะงาน" description="อัปเดตขั้นตอนการทำงาน">
       <h3 className="pl-6 pb-2">{statusLabels[project.status]}</h3>
       {suggestedTypes.length > 0 && (
@@ -172,5 +177,7 @@ export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam,
       }
       {message && <p role="status" className="text-blue pl-6 pb-1">{message}</p>}
     </Section>
+    <ProjectStatusHistory logs={project.status_logs} error={data.statusLogsError} />
+    </>
   );
 }

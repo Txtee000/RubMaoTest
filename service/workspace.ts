@@ -1,5 +1,5 @@
-import type { AppData, Project, Appointment, AppointmentInput, Employee } from "@/features/project/types";
-import type { Project as ProjectRow, JobMaterial, Payment as PaymentRow } from "@/schema";
+import type { AppData, Project, ProjectSaveOptions, Appointment, AppointmentInput, Employee } from "@/features/project/types";
+import type { Project as ProjectRow, JobMaterial, Payment as PaymentRow, ProjectStatusLog } from "@/schema";
 import { getPhoneNumberError } from "@/lib/phone";
 import { getProject, updateProject } from "./project";
 import { getCustomer } from "./customer";
@@ -8,15 +8,23 @@ import { getAppointment, createAppointment, updateAppointment } from "./appointm
 import { getJobMaterial, createJobMaterial, updateJobMaterial, deleteJobMaterial } from "./job_material";
 import { getPayment, createPayment, updatePayment } from "./payment";
 import { getWorkOn, createWorkOn, deleteWorkOn } from "./work_on";
+import { getProjectStatusLog } from "./project_status_log";
 
 // โหลดแต่ละตาราง แล้วรวมเป็นข้อมูลที่หน้าจอเดิมใช้
 export async function getWorkspace(signal?: AbortSignal): Promise<AppData> {
-  const [projects, customers, employees, materials, payments, assignments, appointments] = await Promise.all([
+  const [projects, customers, employees, materials, payments, assignments, appointments, history] = await Promise.all([
     getProject({}, signal), getCustomer({}, signal), getEmployee({}, signal),
     getJobMaterial({}, signal), getPayment({}, signal), getWorkOn({}, signal), getAppointment({}, signal),
+    getProjectStatusLog({}, signal)
+      .then((logs) => ({ logs, error: "" }))
+      .catch((error: unknown) => {
+        if (signal?.aborted) throw error;
+        return { logs: [] as ProjectStatusLog[], error: "โหลดประวัติสถานะไม่สำเร็จ กรุณาลองโหลดหน้าอีกครั้ง" };
+      }),
   ]);
 
   return {
+    statusLogsError: history.error,
     projects: projects.map((project): Project => {
       const customer = customers.find((item) => item.customer_id === project.customer_id);
       if (!customer) throw new Error(`ไม่พบข้อมูลลูกค้าของงาน ${project.order_name}`);
@@ -25,6 +33,12 @@ export async function getWorkspace(signal?: AbortSignal): Promise<AppData> {
         customer_name: customer.customer_name, phone_number: customer.phone_number,
         order_name: project.order_name, description_project: project.description_project ?? "",
         status: project.status as Project["status"],
+        status_logs: history.logs.filter((log) => log.project_id === project.project_id).map((log) => ({
+          id: log.log_id, status: log.status as Project["status"],
+          // CURRENT_TIMESTAMP is stored as UTC in Supabase's default database timezone.
+          // Unlike date inputs for payments/appointments, these timestamps are not Bangkok wall time.
+          changed_at: /(Z|[+-]\d{2}:\d{2})$/i.test(log.changed_at) ? log.changed_at : `${log.changed_at}Z`,
+        })),
         labor_cost: Number(project.labor_cost), service_percent: Number(project.service_percent),
         base_cost: Number(project.base_cost), final_cost: Number(project.final_cost),
         materials: materials.filter((m) => m.project_id === project.project_id).map((m) => ({
@@ -74,7 +88,7 @@ export async function createWorkspaceEmployee(input: Omit<Employee, "id">): Prom
 
 // บันทึกเฉพาะข้อมูลที่เปลี่ยนผ่าน CRUD แต่ละตาราง
 // ถ้าคำขอใดล้มเหลว provider จะโหลดข้อมูลจริงใหม่และแสดงข้อผิดพลาด
-export async function saveProjectDetails(project: Project, previous: Project): Promise<void> {
+export async function saveProjectDetails(project: Project, previous: Project, options: ProjectSaveOptions = {}): Promise<void> {
   for (const material of project.materials) {
     const old = previous.materials.find((item) => item.id === material.id);
     if (old && JSON.stringify(old) === JSON.stringify(material)) continue;
@@ -118,9 +132,11 @@ export async function saveProjectDetails(project: Project, previous: Project): P
 
   const changes: Partial<ProjectRow> = {
     order_name: project.order_name, description_project: project.description_project,
-    status: project.status, base_cost: project.base_cost, labor_cost: project.labor_cost,
+    base_cost: project.base_cost, labor_cost: project.labor_cost,
     service_percent: project.service_percent, final_cost: project.final_cost,
   };
+  // Ordinary saves must not create a status event; re-estimating is an explicit event.
+  if (project.status !== previous.status || options.recordStatus) changes.status = project.status;
   await updateProject(project.id, changes);
 }
 

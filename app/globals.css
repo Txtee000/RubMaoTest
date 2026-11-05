@@ -676,19 +676,29 @@ a:focus-visible {
   border-radius: 50%;
 }
 .badge-blue {
-  color: #538ad3;
+  color: #1d4ed8;
   background: #eef5ff;
 }
 .badge-green {
-  color: #329978;
+  color: #15803d;
   background: #edf9f4;
 }
+.badge-neutral {
+  color: #475569;
+  background: #f1f5f9;
+}
+.badge-completed {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  font-weight: 600;
+}
 .badge-amber {
-  color: #bb913e;
+  color: #b45309;
   background: #fff8e8;
 }
 .badge-red {
-  color: #c76571;
+  color: #b91c1c;
   background: #fff0f2;
 }
 .payment-label {
