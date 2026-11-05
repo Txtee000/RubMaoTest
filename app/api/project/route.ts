@@ -66,6 +66,7 @@ export async function POST(request: Request) {
       .single();
 
     if (error) return databaseError(error, "เพิ่มข้อมูล");
+    await recordStatus(data.project_id, data.status);
     return NextResponse.json({ project: data }, { status: 201 });
   } catch (error) {
     console.error("POST project:", error);
@@ -120,6 +121,9 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "ยกเลิกงานได้เฉพาะสถานะรอลูกค้าตกลง" }, { status: 409 });
     }
     if (!data) return NextResponse.json({ error: "ไม่พบรายการ หรือไม่มีสิทธิ์แก้ไข" }, { status: 404 });
+    if (typeof updates.status === "string") {
+      await recordStatus(data.project_id, data.status);
+    }
     return NextResponse.json({ project: data });
   } catch (error) {
     console.error("PUT project:", error);
@@ -191,6 +195,16 @@ function validatePayload(payload: Record<string, unknown>, partial = false): str
     if (typeof payload.order_name !== "string" || payload.order_name.length > 255 || !payload.order_name.trim()) return "order_name ต้องเป็นข้อความที่ไม่ว่าง ยาวไม่เกิน 255 ตัวอักษร";
   }
   return null;
+}
+
+// A history failure must never turn a successful project save into a failed request.
+async function recordStatus(project_id: number, status: string) {
+  try {
+    const { error } = await supabase.from("project_status_log").insert({ project_id, status });
+    if (error) console.error("insert project_status_log:", error);
+  } catch (error) {
+    console.error("insert project_status_log:", error);
+  }
 }
 
 function allowedOrigin(request: Request) {

@@ -25,6 +25,13 @@ export interface Employee {
   phone_number: string;
 }
 
+export interface ProjectStatusLog {
+  log_id: number;
+  project_id: number;
+  status: string;
+  changed_at: string;
+}
+
 export interface WorkOn {
   employee_id: number;
   project_id: number;

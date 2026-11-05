@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { usePathname } from "next/navigation";
 import { getWorkspace, saveProjectDetails, saveProjectAppointment, createWorkspaceEmployee } from "@/service/workspace";
 import { sendAppointmentReminder } from "@/service/appointment";
-import type { AppointmentInput, AppData, Project, Employee } from "./types";
+import type { AppointmentInput, AppData, Project, ProjectSaveOptions, Employee } from "./types";
 
 const emptyData: AppData = { projects: [], employees: [], appointments: [] };
 type ProjectContextValue = {
@@ -14,7 +14,7 @@ type ProjectContextValue = {
   error: string;
   loadError: string;
   reload: () => Promise<void>;
-  updateProject: (project: Project) => Promise<boolean>;
+  updateProject: (project: Project, options?: ProjectSaveOptions) => Promise<boolean>;
   addEmployee: (input: Omit<Employee, "id">) => Promise<Employee | null>;
   saveAppointment: (appointment: AppointmentInput) => Promise<boolean>;
   sendReminder: (id: number) => Promise<boolean>;
@@ -95,10 +95,10 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function updateProject(project: Project) {
+  async function updateProject(project: Project, options?: ProjectSaveOptions) {
     const previous = data.projects.find((item) => item.id === project.id);
     if (!previous) { setError("ไม่พบงานนี้"); return false; }
-    return save(() => saveProjectDetails(project, previous));
+    return save(() => saveProjectDetails(project, previous, options));
   }
 
   async function saveAppointment(appointment: AppointmentInput) {

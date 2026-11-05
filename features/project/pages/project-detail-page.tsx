@@ -207,7 +207,7 @@ export function ProjectDetailPage({
             project={project}
             onSave={async (updatedProject) => {
               setEstimateSaved(false);
-              const saved = await updateProject(updatedProject);
+              const saved = await updateProject(updatedProject, { recordStatus: true });
               if (saved) {
                 setEstimateSaved(true);
                 setTab("workflow");

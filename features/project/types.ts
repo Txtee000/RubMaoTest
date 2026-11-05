@@ -53,6 +53,7 @@ export type Project = {
   customer_name: string;
   phone_number: string;
   status: ProjectStatus;
+  status_logs: { id: number; status: ProjectStatus; changed_at: string }[];
   materials: Material[];
   base_cost: number;
   labor_cost: number;
@@ -62,4 +63,11 @@ export type Project = {
   employee_ids: number[];
 };
 
-export type AppData = { projects: Project[]; employees: Employee[]; appointments: Appointment[] };
+export type ProjectSaveOptions = { recordStatus?: boolean };
+
+export type AppData = {
+  projects: Project[];
+  employees: Employee[];
+  appointments: Appointment[];
+  statusLogsError?: string;
+};
