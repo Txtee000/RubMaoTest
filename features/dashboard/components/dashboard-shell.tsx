@@ -21,7 +21,7 @@ import { useProjects } from "@/features/project/project-provider";
 import { logout } from "@/service/auth";
 
 const navigation = [
-  { href: "/", label: "ภาพรวม", icon: LayoutDashboard },
+  // { href: "/", label: "ภาพรวม", icon: LayoutDashboard },
   { href: "/project", label: "รายการงาน", icon: FolderKanban },
   { href: "/appointments", label: "นัดหมาย", icon: CalendarDays },
   { href: "/tasks", label: "งานที่ได้รับมอบหมาย", icon: ClipboardCheck },

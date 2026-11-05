@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test tests/*.test.cjs"
+    "test": "node --test"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

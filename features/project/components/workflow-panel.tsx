@@ -130,6 +130,9 @@ export function WorkflowPanel({ project, onSave, onSchedule, onEstimate, onTeam,
                 : statusLabels[status]}
             </Button>
           ))}
+          {project.status === "revision_site" && (
+            <Button type="button" className="mb-2" variant="outline" onClick={onTeam}>แก้ไขสมาชิก</Button>
+          )}
           {nextStatuses.includes("waiting_shop_inspection") && (
             <>
               <Button className="mb-2" variant="outline" onClick={onTeam}>เพิ่มสมาชิก</Button>
