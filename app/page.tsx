@@ -1,5 +1,5 @@
-﻿import { ProjectListPage } from "@/features/project/pages/project-list-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ProjectListPage />;
+  redirect("/project");
 }

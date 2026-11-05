@@ -17,7 +17,7 @@ export default function LoginPage() {
     setError("");
     try {
       await login(username, password);
-      window.location.replace("/");
+      window.location.replace("/project");
     } catch (error) {
       setError(error instanceof Error ? error.message : "เชื่อมต่อไม่สำเร็จ กรุณาลองอีกครั้ง");
       setBusy(false);

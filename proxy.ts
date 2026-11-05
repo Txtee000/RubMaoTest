@@ -8,7 +8,7 @@ export function proxy(request: NextRequest) {
   }
   const authenticated = validSession(request.cookies.get(SESSION_COOKIE)?.value);
   if (path === "/login") {
-    return authenticated ? NextResponse.redirect(new URL("/", request.url)) : NextResponse.next();
+    return authenticated ? NextResponse.redirect(new URL("/project", request.url)) : NextResponse.next();
   }
   if (authenticated) return NextResponse.next();
   if (path.startsWith("/api/")) {

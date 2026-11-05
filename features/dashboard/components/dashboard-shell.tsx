@@ -65,7 +65,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         />
       )}
       <aside className={`sidebar ${menuOpen ? "is-open" : ""}`}>
-        <Link href="/" className="brand" onClick={() => setMenuOpen(false)}>
+        <Link href="/project" className="brand" onClick={() => setMenuOpen(false)}>
           <span className="brand-mark">
             <Hammer size={23} />
           </span>
