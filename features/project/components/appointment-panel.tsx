@@ -20,21 +20,6 @@ export function AppointmentPanel({ project, initialType = "site_visit" }: { proj
   const [location, setLocation] = useState("");
   const [message, setMessage] = useState("");
 
-  async function completeAppointment(appointment: Appointment) {
-    const saved = await saveAppointment({ ...appointment, status: "completed" });
-    if (!saved) { setMessage("บันทึกไม่สำเร็จ ดูรายละเอียดด้านบน"); return; }
-    // ปิดฟอร์มของนัดที่เสร็จแล้ว เพื่อไม่ให้บันทึกกลับเป็นรอดำเนินการ
-    if (editingId === appointment.id) {
-      setEditingId(0);
-      setDate("");
-      setHour("");
-      setMinute("00");
-      setLocation("");
-      setType("site_visit");
-    }
-    setMessage("อัปเดตนัดหมายเป็นดำเนินการแล้ว");
-  }
-
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!location.trim()) {
@@ -93,9 +78,6 @@ export function AppointmentPanel({ project, initialType = "site_visit" }: { proj
                     }}
                   >
                     แก้ไขนัด
-                  </Button>
-                  <Button type="button" onClick={() => completeAppointment(a)}>
-                    ดำเนินการแล้ว
                   </Button>
                   </div>
                 )}

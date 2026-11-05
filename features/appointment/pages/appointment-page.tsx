@@ -3,14 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { CalendarDays, MapPin, ArrowUpRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { EmptyState, LoadingState, PageHeading, Section } from "@/features/shared/ui";
 import { useProjects } from "@/features/project/project-provider";
 import { appointmentLabels, formatDate } from "@/features/project/project-utils";
 import { AppointmentReminder } from "../components/appointment-reminder";
 
 export function AppointmentPage() {
-  const { data, ready, saving, saveAppointment } = useProjects();
+  const { data, ready } = useProjects();
   const [filter, setFilter] = useState("all");
   if (!ready) return <LoadingState />;
   const appointments = data.appointments
@@ -66,15 +65,6 @@ export function AppointmentPage() {
                       เปิดงาน <ArrowUpRight size={16} />
                     </Link>
                     <AppointmentReminder appointment={a} canSend={a.status === "pending" && !!p && !["completed", "reject"].includes(p.status)} />
-                    {a.status === "pending" && p?.status !== "reject" && (
-                      <Button
-                        disabled={saving}
-                        variant="outline"
-                        onClick={() => saveAppointment({ ...a, status: "completed" })}
-                      >
-                        ดำเนินการแล้ว
-                      </Button>
-                    )}
                   </div>
                 </div>
               );

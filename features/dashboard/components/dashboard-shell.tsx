@@ -24,7 +24,7 @@ const navigation = [
   // { href: "/", label: "ภาพรวม", icon: LayoutDashboard },
   { href: "/project", label: "รายการงาน", icon: FolderKanban },
   { href: "/appointments", label: "นัดหมาย", icon: CalendarDays },
-  { href: "/tasks", label: "งานที่ได้รับมอบหมาย", icon: ClipboardCheck },
+  // { href: "/tasks", label: "งานที่ได้รับมอบหมาย", icon: ClipboardCheck },
   { href: "/payments", label: "การชำระเงิน", icon: Wallet },
 ];
 
