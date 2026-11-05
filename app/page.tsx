@@ -1,5 +1,5 @@
-﻿import { DashboardPage } from "@/features/dashboard/pages/dashboard-page";
+﻿import { ProjectListPage } from "@/features/project/pages/project-list-page";
 
 export default function Page() {
-  return <DashboardPage />;
+  return <ProjectListPage />;
 }
